@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     tools {
-            maven 'MAVEN_HOME' // 위에서 설정한 Maven 이름과 동일하게 입력
+        jdk 'JDK11'
+        maven 'MAVEN_HOME'
     }
 
     environment {
