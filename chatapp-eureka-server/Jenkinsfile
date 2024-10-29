@@ -2,13 +2,12 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK11'
-        maven 'MAVEN_HOME'
+        jdk 'JDK11'       // Jenkins에 설치된 JDK11 툴 이름
+        maven 'MAVEN_HOME' // Jenkins에 설치된 Maven 툴 이름
     }
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
-        DOCKER_BUILDKIT = '1'
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id') // Jenkins에 등록한 Docker Hub 인증 정보 ID
     }
 
     stages {
@@ -28,13 +27,14 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                dir('eureka-server') {
+                dir('chatapp-eureka-server') {
                     script {
                         sh '''
                         echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
-                        docker buildx create --use --name mybuilder || docker buildx use mybuilder
-                        docker buildx build --platform linux/amd64,linux/arm64 \
-                          -t rheonik/eureka-server:latest --push .
+
+                        docker build -t rheonik/eureka-server:latest .
+
+                        docker push rheonik/eureka-server:latest
                         '''
                     }
                 }
