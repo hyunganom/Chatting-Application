@@ -1,10 +1,5 @@
 pipeline {
-    agent {
-            docker {
-                image 'maven:3.8.6-openjdk-11' // Maven과 OpenJDK 11이 포함된 공식 이미지
-                args '-v /var/run/docker.sock:/var/run/docker.sock'
-            }
-    }
+    agent any
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
@@ -18,6 +13,12 @@ pipeline {
         }
 
         stage('Build') {
+            agent {
+                docker {
+                    image 'maven:3.8.6-openjdk-11'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
                 dir('eureka-server') {
                     sh 'mvn clean package -DskipTests'
@@ -38,8 +39,6 @@ pipeline {
                 }
             }
         }
-
-        // Push Docker Image 단계는 이미 --push 옵션으로 푸시되므로 생략
 
         stage('Deploy') {
             steps {
