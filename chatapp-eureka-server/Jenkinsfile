@@ -20,7 +20,7 @@ pipeline {
 
         stage('Build') {
             steps {
-                dir('eureka-server') {
+                dir('chatapp-eureka-server') {
                     sh 'mvn clean package -DskipTests'
                 }
             }
