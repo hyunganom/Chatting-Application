@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK11'
+        maven 'MAVEN_HOME'
+    }
+
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
     }
@@ -13,12 +18,6 @@ pipeline {
         }
 
         stage('Build') {
-            agent {
-                docker {
-                    image 'maven:3.8.6-openjdk-11'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
-                }
-            }
             steps {
                 dir('eureka-server') {
                     sh 'mvn clean package -DskipTests'
@@ -43,7 +42,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 sh '''
-                cd /Users/hyunjae/desktop
+                cd /home/jenkins/desktop
                 docker-compose pull eureka-server
                 docker-compose up -d eureka-server
                 '''
