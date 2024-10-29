@@ -10,7 +10,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>chatapp-eureka-server</module>
-        <module>chatapp-apigateway-server</module>
     </modules>
 
     <properties>
