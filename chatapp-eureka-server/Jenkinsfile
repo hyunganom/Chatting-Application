@@ -3,7 +3,6 @@ pipeline {
     tools {
         jdk 'JDK11'
         maven 'MAVEN_HOME'
-        dockerTool 'docker-cli'
     }
 
 
