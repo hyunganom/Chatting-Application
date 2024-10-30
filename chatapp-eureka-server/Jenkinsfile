@@ -1,13 +1,8 @@
 pipeline {
     agent any
 
-    tools {
-        jdk 'JDK11'       // Jenkins에 설치된 JDK11 툴 이름
-        maven 'MAVEN_HOME' // Jenkins에 설치된 Maven 툴 이름
-    }
-
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id') // Jenkins에 등록한 Docker Hub 인증 정보 ID
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id') // 자격 증명 ID
     }
 
     stages {
@@ -29,26 +24,40 @@ pipeline {
             steps {
                 dir('chatapp-eureka-server') {
                     script {
-                        sh '''
-                        echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin
+                        // Docker 이미지 빌드
+                        def image = docker.build("rheonik/chat-eureka-server:1.0")
 
-                        docker build -t rheonik/eureka-server:latest .
-
-                        docker push rheonik/eureka-server:latest
-                        '''
+                        // Docker Hub에 로그인 및 이미지 푸시
+                        docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
+                            image.push()
+                        }
                     }
                 }
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy with Docker Compose') {
             steps {
-                sh '''
-                cd /home/jenkins/desktop
-                docker-compose pull eureka-server
-                docker-compose up -d eureka-server
-                '''
+                script {
+                    // Jenkins 작업 공간 경로로 이동하여 Docker Compose 실행
+                    sh '''
+                        cd /var/jenkins_home/workspace/${JOB_NAME}/
+                        docker-compose pull eureka-server
+                        docker-compose up -d eureka-server
+                    '''
+                }
             }
+        }
+    }
+
+    post {
+        always {
+            // 필요 시 정리 작업 수행
+            echo '파이프라인 완료'
+        }
+        failure {
+            // 실패 시 알림 등 처리
+            echo '파이프라인 실패'
         }
     }
 }
