@@ -1,6 +1,12 @@
 pipeline {
     agent any
 
+    tools {
+        jdk 'JDK11'
+        maven 'MAVEN_HOME'
+    }
+
+
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id') // 자격 증명 ID
     }
