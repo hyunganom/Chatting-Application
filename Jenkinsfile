@@ -57,7 +57,7 @@ pipeline {
                     sh '''
                         cd ${WORKSPACE}
                         docker-compose pull
-                        docker-compose -p Chatting_Application up -d
+                        docker-compose -p chatting_application up -d
                     '''
                 }
             }
