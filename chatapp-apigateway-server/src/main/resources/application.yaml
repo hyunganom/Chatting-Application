@@ -8,26 +8,26 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/users/**
-        - id: chat-service
-          uri: lb://chat-service
-          predicates:
-            - Path=/chatrooms/**
-        - id: message-service
-          uri: lb://message-service
-          predicates:
-            - Path=/messages/**
-        - id: websocket_service
-          uri: http://websocket_service:8084
-          predicates:
-            - Path=/ws/**
-          cors:
-            allowedOrigins:
-              - "http://localhost:8084"
-            allowedMethods:
-              - "*"
-            allowedHeaders:
-              - "*"
-            allowCredentials: true
+#        - id: chat-service
+#          uri: lb://chat-service
+#          predicates:
+#            - Path=/chatrooms/**
+#        - id: message-service
+#          uri: lb://message-service
+#          predicates:
+#            - Path=/messages/**
+#        - id: websocket_service
+#          uri: http://websocket_service:8084
+#          predicates:
+#            - Path=/ws/**
+#          cors:
+#            allowedOrigins:
+#              - "http://localhost:8084"
+#            allowedMethods:
+#              - "*"
+#            allowedHeaders:
+#              - "*"
+#            allowCredentials: true
 
 eureka:
   client:
