@@ -41,29 +41,28 @@ pipeline {
             }
         }
 
-
         stage('Build Docker Images') {
             steps {
                 script {
                     def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
                     def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
-                    def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")  // 수정된 부분
+                    def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
 
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
                         eurekaImage.push()
                         apiGatewayImage.push()
-                        userImage.push()  // 누락된 push 명령 추가
+                        userImage.push()
                     }
                 }
             }
         }
-
 
         stage('Deploy with Docker Compose') {
             steps {
                 script {
                     sh '''
                         cd ${WORKSPACE}
+                        docker-compose down  # 기존 컨테이너를 중지하고 제거
                         docker-compose pull
                         docker-compose -p chatting_application up -d
                     '''
