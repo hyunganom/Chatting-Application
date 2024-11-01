@@ -30,70 +30,9 @@ services:
       - app-network
     depends_on:
       - eureka-server
-  
-  user-service:
-    image: rheonik/chat-user-service:1.0  # replace with actual image name
-    container_name: user-service
-    ports:
-      - "8081:8081"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_container:5432/chatapp_db?sslmode=disable
-      - SPRING_DATASOURCE_USERNAME=chatuser
-      - SPRING_DATASOURCE_PASSWORD=chatpass
-      - SPRING_REDIS_HOST=redis_container
-      - SPRING_REDIS_PORT=6379
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    networks:
-      - app-network
-    depends_on:
-      - postgres
-      - redis
-      - eureka-server
 
-  postgres:
-    image: postgres:13
-    container_name: postgres_container
-    restart: always
-    environment:
-      POSTGRES_USER: chatuser
-      POSTGRES_PASSWORD: chatpass
-      POSTGRES_DB: chatapp_db
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - /Users/hyunjae/desktop/postgresql.conf:/etc/postgresql/postgresql.conf  # 올바른 경로로 수정
-      - /Users/hyunjae/desktop/logs/postgresql:/var/log/postgresql  # PostgreSQL 로그 경로 마운트
-    command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]  # 올바른 설정 파일 경로 사용
-
-  mongo:
-    image: mongo:4.4
-    container_name: mongo_container
-    restart: always
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-
-  redis:
-    image: redis:6.2
-    container_name: redis_container
-    restart: always
-    ports:
-      - "6379:6379"
-    command: [ "redis-server", "--appendonly", "yes" ]
-    volumes:
-      - redis_data:/data
-      - /Users/hyunjae/desktop/logs/redis:/var/log/redis  # Redis 로그 경로 마운트
 
 
 networks:
   app-network:
     driver: bridge
-
-
-volumes:
-  postgres_data:
-  mongo_data:
-  redis_data:
