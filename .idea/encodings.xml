@@ -9,5 +9,6 @@
     <file url="file://$PROJECT_DIR$/untitled/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/../chatapp-apigateway-server/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/../chatapp-apigateway-server/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../chatapp-eureka-server/src/main/java" charset="UTF-8" />
   </component>
 </project>

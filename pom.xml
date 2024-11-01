@@ -11,6 +11,8 @@
     <modules>
         <module>chatapp-eureka-server</module>
         <module>chatapp-apigateway-server</module>
+        <module>chatapp-user-server</module>
+
     </modules>
 
     <properties>
