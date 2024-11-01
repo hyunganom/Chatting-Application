@@ -38,10 +38,10 @@ services:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_container:5432/chatapp_db?sslmode=disable
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres_chat:5432/chatapp_db?sslmode=disable
       - SPRING_DATASOURCE_USERNAME=chatuser
       - SPRING_DATASOURCE_PASSWORD=chatpass
-      - SPRING_REDIS_HOST=redis_container
+      - SPRING_REDIS_HOST=redis_chat
       - SPRING_REDIS_PORT=6379
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
     networks:
