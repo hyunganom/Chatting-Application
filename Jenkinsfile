@@ -36,7 +36,7 @@ pipeline {
             }
         }
 
-        stage('Build API Gateway') {
+        stage('Build User Server') {
             steps {
                 dir('chatapp-user-server') {
                     sh 'mvn clean package -DskipTests'
