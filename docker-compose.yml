@@ -8,6 +8,8 @@ services:
       - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - ./config/eureka-server/application.yml:/config/application.yml
     networks:
       - app-network
     healthcheck:
@@ -23,27 +25,22 @@ services:
       - "8000:8000"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - EUREKA_SERVER_URI=http://eureka-server:8761/eureka
-      - EUREKA_INSTANCE_LEASE_RENEWAL_INTERVAL_IN_SECONDS=10 # 등록 갱신 주기
-      - EUREKA_INSTANCE_LEASE_EXPIRATION_DURATION_IN_SECONDS=30 # 등록 만료 시간
+    volumes:
+      - ./config/apigateway-server/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
       - eureka-server
-  
+
   user-service:
-    image: rheonik/chat-user-service:1.0  # replace with actual image name
+    image: rheonik/chat-user-service:1.0
     container_name: user-service
     ports:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/chatapp_db?sslmode=disable
-      - SPRING_DATASOURCE_USERNAME=chatuser
-      - SPRING_DATASOURCE_PASSWORD=chatpass
-      - SPRING_REDIS_HOST=redis
-      - SPRING_REDIS_PORT=6379
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    volumes:
+      - ./config/user-service/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
@@ -62,9 +59,9 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - /Users/hyunjae/desktop/postgresql.conf:/etc/postgresql/postgresql.conf  # 올바른 경로로 수정
-      - /Users/hyunjae/desktop/logs/postgresql:/var/log/postgresql  # PostgreSQL 로그 경로 마운트
-    command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]  # 올바른 설정 파일 경로 사용
+      - /Users/hyunjae/desktop/postgresql.conf:/etc/postgresql/postgresql.conf
+      - /Users/hyunjae/desktop/logs/postgresql:/var/log/postgresql
+    command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]
     networks:
       - app-network
 
@@ -86,15 +83,13 @@ services:
     command: [ "redis-server", "--appendonly", "yes" ]
     volumes:
       - redis_data:/data
-      - /Users/hyunjae/desktop/logs/redis:/var/log/redis  # Redis 로그 경로 마운트
+      - /Users/hyunjae/desktop/logs/redis:/var/log/redis
     networks:
       - app-network
-
 
 networks:
   app-network:
     driver: bridge
-
 
 volumes:
   postgres_data:
