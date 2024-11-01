@@ -12,10 +12,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // Git에서 프로젝트 전체를 가져와 docker-compose.yml 파일 포함
                 git url: 'https://github.com/hyunganom/Chatting-Application.git', branch: 'main'
-
-                // docker-compose.yml 위치 확인
                 sh 'ls -l ${WORKSPACE}'
             }
         }
@@ -54,6 +51,7 @@ pipeline {
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
                         eurekaImage.push()
                         apiGatewayImage.push()
+                        userImage.push()  // 누락된 이미지 푸시
                     }
                 }
             }
@@ -62,7 +60,6 @@ pipeline {
         stage('Deploy with Docker Compose') {
             steps {
                 script {
-                    // docker-compose.yml이 Git에서 가져온 상태로 ${WORKSPACE}에 있으므로 경로를 명시하지 않고 사용 가능
                     sh '''
                         cd ${WORKSPACE}
                         docker-compose pull
