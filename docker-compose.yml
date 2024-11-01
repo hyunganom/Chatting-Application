@@ -53,7 +53,6 @@ services:
 
   postgres:
     image: postgres:13
-    container_name: postgres_chat
     restart: always
     environment:
       POSTGRES_USER: chatuser
@@ -66,19 +65,21 @@ services:
       - /Users/hyunjae/desktop/postgresql.conf:/etc/postgresql/postgresql.conf  # 올바른 경로로 수정
       - /Users/hyunjae/desktop/logs/postgresql:/var/log/postgresql  # PostgreSQL 로그 경로 마운트
     command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]  # 올바른 설정 파일 경로 사용
+    networks:
+      - app-network
 
   mongo:
     image: mongo:4.4
-    container_name: mongo_chat
     restart: always
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    networks:
+      - app-network
 
   redis:
     image: redis:6.2
-    container_name: redis_chat
     restart: always
     ports:
       - "6379:6379"
@@ -86,6 +87,8 @@ services:
     volumes:
       - redis_data:/data
       - /Users/hyunjae/desktop/logs/redis:/var/log/redis  # Redis 로그 경로 마운트
+    networks:
+      - app-network
 
 
 networks:
