@@ -53,7 +53,7 @@ services:
 
   postgres:
     image: postgres:13
-    container_name: postgres_container
+    container_name: postgres_chat
     restart: always
     environment:
       POSTGRES_USER: chatuser
@@ -69,7 +69,7 @@ services:
 
   mongo:
     image: mongo:4.4
-    container_name: mongo_container
+    container_name: mongo_chat
     restart: always
     ports:
       - "27017:27017"
@@ -78,7 +78,7 @@ services:
 
   redis:
     image: redis:6.2
-    container_name: redis_container
+    container_name: redis_chat
     restart: always
     ports:
       - "6379:6379"

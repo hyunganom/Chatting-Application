@@ -2,7 +2,7 @@ spring:
   application:
     name: user-service
   datasource:
-    url: jdbc:postgresql://postgres_container:5432/chatapp_db?sslmode=disable
+    url: jdbc:postgresql://postgres_chat:5432/chatapp_db?sslmode=disable
     username: chatuser
     password: chatpass
   jpa:
@@ -14,7 +14,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 
   redis:
-    host: redis_container
+    host: redis_chat
     port: 6379
 
 logging:
