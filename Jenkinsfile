@@ -41,17 +41,27 @@ pipeline {
             }
         }
 
+        stage('Build Chat Server') {
+            steps {
+                dir('chatapp-chat-server') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 script {
                     def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
                     def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
                     def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
+                    def chatImage = docker.build("rheonik/chat-chat-service:1.0", "chatapp-chat-server/")
 
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
                         eurekaImage.push()
                         apiGatewayImage.push()
                         userImage.push()
+                        chatImage.push()
                     }
                 }
             }

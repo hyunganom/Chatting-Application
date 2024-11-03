@@ -47,6 +47,21 @@ services:
       - postgres
       - redis
       - eureka-server
+  chat-service:
+    image: rheonik/chat-chat-service:1.0
+    container_name: chat-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - ./config/chat-service/application.yml:/config/application.yml
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+      - redis
+      - eureka-server
 
   postgres:
     image: postgres:13
