@@ -17,12 +17,12 @@ spring:
 #          predicates:
 #            - Path=/messages/**
         - id: websocket_service
-          uri: http://websoket_service:8084
+          uri: http://websocket_service:8084
           predicates:
             - Path=/ws/**
           cors:
             allowedOrigins:
-              - "http://websoket-service:8084"
+              - "http://websocket-service:8084"
             allowedMethods:
               - "*"
             allowedHeaders:

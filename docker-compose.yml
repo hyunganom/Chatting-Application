@@ -64,8 +64,8 @@ services:
       - redis
       - eureka-server
 
-  websoket-service:
-    image: rheonik/chat-websoket-service:1.0
+  websocket-service:
+    image: rheonik/chat-websocket-service:1.0
     container_name: websoket-service
     ports:
       - "8084:8084"
