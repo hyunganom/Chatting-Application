@@ -23,6 +23,7 @@ spring:
           cors:
             allowedOriginPatterns:
               - "http://localhost:8000"
+              - "http://localhost:8084"
               - "http://websocket-service:8084"
             allowedMethods:
               - "*"
