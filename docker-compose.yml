@@ -47,6 +47,7 @@ services:
       - postgres
       - redis
       - eureka-server
+
   chat-service:
     image: rheonik/chat-chat-service:1.0
     container_name: chat-service
@@ -62,6 +63,23 @@ services:
       - postgres
       - redis
       - eureka-server
+
+  websoket-service:
+    image: rheonik/chat-websoket-service:1.0
+    container_name: websoket-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - ./config/chat-service/application.yml:/config/application.yml
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+      - redis
+      - eureka-server
+      - kafka_broker1
 
   postgres:
     image: postgres:13
@@ -99,6 +117,79 @@ services:
     volumes:
       - redis_data:/data
       - /Users/hyunjae/desktop/logs/redis:/var/log/redis
+    networks:
+      - app-network
+
+  zookeeper:
+    image: wurstmeister/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - app-network
+
+  kafka_broker1:
+    image: wurstmeister/kafka
+    ports:
+      - "9092:9092"    # 외부 접근 포트
+      - "29092:29092"  # 내부 접근 포트
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,PLAINTEXT_INTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_broker1:9092,PLAINTEXT_INTERNAL://kafka_broker1:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
+    networks:
+      - app-network
+
+  kafka_broker2:
+    image: wurstmeister/kafka
+    ports:
+      - "9093:9093"    # 외부 접근 포트
+      - "29093:29093"  # 내부 접근 포트
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093,PLAINTEXT_INTERNAL://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_broker2:9093,PLAINTEXT_INTERNAL://kafka_broker2:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
+    networks:
+      - app-network
+
+  kafka_broker3:
+    image: wurstmeister/kafka
+    ports:
+      - "9094:9094"    # 외부 접근 포트
+      - "29094:29094"  # 내부 접근 포트
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9094,PLAINTEXT_INTERNAL://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka_broker3:9094,PLAINTEXT_INTERNAL://kafka_broker3:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+    depends_on:
+      - zookeeper
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
     networks:
       - app-network
 

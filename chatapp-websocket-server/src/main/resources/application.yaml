@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: websocket-service
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+
+# Kafka
+  kafka:
+    bootstrap-servers: kafka_broker1:9092,kafka_broker2:9093,kafka_broker3:9094
+    consumer:
+      group-id: websocket_group
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: "chat.websocketserver.model, chat.messageserver.model, java.util, java.lang"

@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Application</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+</head>
+<body>
+<h2>Chat Application</h2>
+
+<!-- 사용자 인증 영역 -->
+<div id="auth-section">
+    <h3>User Authentication</h3>
+    <label>Username: </label>
+    <input type="text" id="username" placeholder="Enter username"/><br>
+    <label>Password: </label>
+    <input type="password" id="password" placeholder="Enter password"/><br>
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button><br>
+</div>
+
+<!-- 채팅 및 채팅방 영역 -->
+<div id="chat-section" style="display:none;">
+    <h3>Chat Room</h3>
+
+    <!-- 채팅방 생성 -->
+    <div id="room-creation-section">
+        <label>Room Name: </label>
+        <input type="text" id="room-name" placeholder="Enter room name"/><br>
+        <button onclick="createRoom()">Create Room</button><br>
+    </div>
+
+    <!-- 채팅방 입장 -->
+    <div id="room-entry-section">
+        <label>Room ID: </label>
+        <input type="text" id="room-id" placeholder="Enter room ID"/><br>
+        <button onclick="enterRoom()">Enter Room</button><br>
+    </div>
+
+    <!-- 채팅 메시지 표시 및 전송 -->
+    <div id="chat-messages" style="height: 300px; overflow-y: scroll; border: 1px solid black;"></div>
+    <input type="text" id="message-input" placeholder="Type a message..."/>
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+    var stompClient = null;
+    var roomId = '';  // 현재 채팅방 ID
+    var sessionId = '';  // 로그인 후 세션 ID 저장
+    var username = '';  // 로그인한 사용자 이름
+
+    // 회원가입
+    function register() {
+        username = document.getElementById("username").value;
+        var password = document.getElementById("password").value;
+
+        fetch(`http://localhost:8000/users/register?username=${username}&password=${password}`, {
+            method: 'POST'
+        })
+            .then(response => response.text())
+            .then(data => {
+                alert("User registered successfully: " + data);
+            })
+            .catch(error => console.error('Error registering user:', error));
+    }
+
+    // 로그인
+    function login() {
+        username = document.getElementById("username").value;
+        var password = document.getElementById("password").value;
+
+        fetch(`http://localhost:8000/users/login?username=${username}&password=${password}`, {
+            method: 'POST'
+        })
+            .then(response => response.text())
+            .then(data => {
+                sessionId = data;
+                console.log('Session ID:', sessionId); // 세션 ID 확인
+                if (sessionId !== "Invalid username or password") {
+                    alert("Login successful!");
+                    document.getElementById('chat-section').style.display = 'block';
+                } else {
+                    alert("Login failed!");
+                }
+            })
+            .catch(error => console.error('Error logging in:', error));
+    }
+
+    // 방 생성
+    function createRoom() {
+        var roomName = document.getElementById("room-name").value;
+
+        if (!sessionId) {
+            alert("Please login first!");
+            return;
+        }
+
+        fetch(`http://localhost:8000/chatrooms/create?roomName=${roomName}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${sessionId}`
+            }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to create room');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert("Room created successfully: " + data.id);
+                roomId = data.id;  // 방 ID 저장
+            })
+            .catch(error => console.error('Error creating room:', error));
+    }
+
+    // 방 입장
+    function enterRoom() {
+        roomId = document.getElementById("room-id").value;
+        console.log('Entering room:', roomId); // 방 ID 확인
+        connect();  // WebSocket 연결
+    }
+
+    // WebSocket 연결 및 이전 메시지 로드
+    function connect() {
+        var socket = new SockJS('http://localhost:8000/ws');  // Gateway를 통해 WebSocket 연결
+        stompClient = Stomp.over(socket);
+        stompClient.connect({}, function (frame) {
+            console.log('Connected: ' + frame);
+            // WebSocket 구독 설정
+            stompClient.subscribe(`/topic/chatroom-${roomId}`, function (messageOutput) {
+                var message = JSON.parse(messageOutput.body);
+                console.log('Message received from WebSocket:', message);  // 수신된 메시지 로그 확인
+                showMessage(message);  // 수신된 메시지를 화면에 표시
+            });
+            loadPreviousMessages();  // 이전 메시지 로드
+        }, function (error) {
+            console.error('WebSocket connection error:', error); // 연결 에러 확인
+        });
+    }
+
+    // 서버에서 이전 메시지 로드
+    function loadPreviousMessages() {
+        console.log('Loading previous messages for room:', roomId);
+        fetch(`http://localhost:8000/messages/room/${roomId}?page=0&size=15`, {
+            headers: {
+                'Authorization': `Bearer ${sessionId}`
+            }
+        })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    throw new Error('Network response was not ok ' + response.statusText);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Received data:', data); // 응답 데이터 출력
+                if (data.content && data.content.length > 0) {
+                    data.content.forEach(message => {
+                        console.log('Message from data:', message);
+                        showMessage(message);
+                    });
+                } else {
+                    console.log('No previous messages found.');
+                }
+            })
+            .catch(error => console.error('Error loading previous messages:', error));
+    }
+
+    // 메시지 전송
+    function sendMessage() {
+        var messageInput = document.getElementById('message-input').value;
+        if (messageInput.trim() !== "") {
+            var message = {
+                'sender': username,  // 로그인한 사용자 이름을 sender로 사용
+                'content': messageInput,
+                'roomId': roomId
+            };
+
+            // WebSocket을 통해 메시지 전송
+            stompClient.send(`/app/chat/sendMessage`, {}, JSON.stringify(message));
+            console.log('Message sent:', message); // 전송된 메시지 확인
+            document.getElementById('message-input').value = '';  // 입력 필드 초기화
+        }
+    }
+
+    // 메시지를 화면에 표시하고 스크롤을 자동으로 가장 아래로 이동
+    function showMessage(message) {
+        console.log('Displaying message:', message); // 메시지 출력 확인
+        var chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) {
+            var messageElement = document.createElement('div');
+            messageElement.appendChild(document.createTextNode(message.sender + ": " + message.content));
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;  // 새로운 메시지가 도착하면 자동으로 스크롤
+            console.log('New message displayed:', message);  // 화면에 출력된 메시지 로그
+        } else {
+            console.error('Chat messages element not found!');
+        }
+    }
+</script>
+</body>
+</html>

@@ -49,6 +49,14 @@ pipeline {
             }
         }
 
+        stage('Build Websoket Server') {
+            steps {
+                dir('chatapp-websoket-server') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
         stage('Build Docker Images') {
             steps {
                 script {
@@ -56,12 +64,14 @@ pipeline {
                     def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
                     def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
                     def chatImage = docker.build("rheonik/chat-chat-service:1.0", "chatapp-chat-server/")
+                    def websoketImage = docker.build("rheonik/chat-websoket-service:1.0", "chatapp-websoket-server/")
 
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
                         eurekaImage.push()
                         apiGatewayImage.push()
                         userImage.push()
                         chatImage.push()
+                        websoketImage.push()
                     }
                 }
             }

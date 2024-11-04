@@ -13,7 +13,7 @@
         <module>chatapp-apigateway-server</module>
         <module>chatapp-user-server</module>
         <module>chatapp-chat-server</module>
-
+        <module>chatapp-websocket-server</module>
     </modules>
 
     <properties>
