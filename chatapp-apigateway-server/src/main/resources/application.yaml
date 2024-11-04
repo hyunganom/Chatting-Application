@@ -17,7 +17,7 @@ spring:
 #          predicates:
 #            - Path=/messages/**
         - id: websocket_service
-          uri: http://websocket_service:8084
+          uri: lb://websocket-service
           predicates:
             - Path=/ws/**
           cors:
