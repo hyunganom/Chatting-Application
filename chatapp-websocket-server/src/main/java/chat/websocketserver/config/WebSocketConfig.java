@@ -19,7 +19,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
         registry.addEndpoint("/ws")
-                .setAllowedOrigins("http://websocket-service:8084") // 허용할 출처 지정
+                .setAllowedOrigins("*") // 허용할 출처 지정
                 .withSockJS();
     }
 }
