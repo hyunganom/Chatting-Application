@@ -21,7 +21,7 @@ spring:
           predicates:
             - Path=/ws/**
           cors:
-            allowedOrigins:
+            allowedOriginPatterns:
               - "http://localhost:8000"
               - "http://websocket-service:8084"
             allowedMethods:
