@@ -72,7 +72,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
-      - ./config/chat-service/application.yml:/config/application.yml
+      - ./config/websocket-service/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
@@ -81,7 +81,18 @@ services:
       - eureka-server
       - kafka_broker1
 
-
+  message-service:
+    image: rheonik/chat-message-service:1.0
+    container_name: message-service
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    networks:
+      - app-network
+    depends_on:
+      - mongo
+      - eureka-server
 
   postgres:
     image: postgres:13
@@ -132,8 +143,8 @@ services:
   kafka_broker1:
     image: wurstmeister/kafka
     ports:
-      - "9092:9092"    # 외부 접근 포트
-      - "29092:29092"  # 내부 접근 포트
+      - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -147,15 +158,15 @@ services:
       - zookeeper
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka
     networks:
       - app-network
 
   kafka_broker2:
     image: wurstmeister/kafka
     ports:
-      - "9093:9093"    # 외부 접근 포트
-      - "29093:29093"  # 내부 접근 포트
+      - "9093:9093"
+      - "29093:29093"
     environment:
       KAFKA_BROKER_ID: 2
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -169,15 +180,15 @@ services:
       - zookeeper
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka
     networks:
       - app-network
 
   kafka_broker3:
     image: wurstmeister/kafka
     ports:
-      - "9094:9094"    # 외부 접근 포트
-      - "29094:29094"  # 내부 접근 포트
+      - "9094:9094"
+      - "29094:29094"
     environment:
       KAFKA_BROKER_ID: 3
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
@@ -191,7 +202,7 @@ services:
       - zookeeper
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka  # Kafka 로그 경로 마운트
+      - /Users/hyunjae/desktop/logs/kafka:/var/log/kafka
     networks:
       - app-network
 
