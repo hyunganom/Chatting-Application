@@ -85,7 +85,7 @@ services:
     image: rheonik/chat-message-service:1.0
     container_name: message-service
     ports:
-      - "8084:8084"
+      - "8083:8083"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
