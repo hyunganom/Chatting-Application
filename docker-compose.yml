@@ -72,7 +72,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
-      - ./config/websocket-service/application.yml:/config/application.yml
+      - ./config/chat-service/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
@@ -81,23 +81,7 @@ services:
       - eureka-server
       - kafka_broker1
 
-  message-service:
-    image: rheonik/chat-message-service:1.0
-    container_name: message-service
-    ports:
-      - "8083:8083"
-    environment:
-      - SPRING_CONFIG_LOCATION=/config/application.yml
-    volumes:
-      - ./config/message-service/application.yml:/config/application.yml
-    networks:
-      - app-network
-    depends_on:
-      - postgres
-      - redis
-      - eureka-server
-      - kafka_broker1
-      - mongo
+
 
   postgres:
     image: postgres:13
