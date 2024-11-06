@@ -86,8 +86,6 @@ services:
     container_name: message-service
     ports:
       - "8083:8083"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
     networks:
       - app-network
     depends_on:
