@@ -5,12 +5,9 @@ spring:
 server:
   port: 8083
 
-# MongoDB
 data:
   mongodb:
     uri: mongodb://mongo:27017/chat_db
-
-# Kafka 설정은 KafkaConsumerConfig에서 관리하므로, 이 부분은 제거하거나 최소화합니다.
 
 logging:
   file:

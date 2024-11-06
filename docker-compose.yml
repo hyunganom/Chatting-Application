@@ -72,7 +72,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
-      - ./config/chat-service/application.yml:/config/application.yml
+      - ./config/websocket-service/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
@@ -89,7 +89,7 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=prod
     volumes:
-      - ./config/chat-service/application.yml:/config/application.yml
+      - ./config/message-service/application.yml:/config/application.yml
     networks:
       - app-network
     depends_on:
