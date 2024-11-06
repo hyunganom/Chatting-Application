@@ -81,6 +81,23 @@ services:
       - eureka-server
       - kafka_broker1
 
+  message-service:
+    image: rheonik/chat-message-service:1.0
+    container_name: message-service
+    ports:
+      - "8084:8084"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    volumes:
+      - ./config/chat-service/application.yml:/config/application.yml
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+      - redis
+      - eureka-server
+      - kafka_broker1
+
   postgres:
     image: postgres:13
     restart: always
