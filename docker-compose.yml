@@ -84,6 +84,8 @@ services:
   message-service:
     image: rheonik/chat-message-service:1.0
     container_name: message-service
+    environment:
+      - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chat_db
     ports:
       - "8083:8083"
     networks:
