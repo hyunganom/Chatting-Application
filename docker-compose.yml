@@ -87,7 +87,7 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_CONFIG_LOCATION=/config/application.yml
     volumes:
       - ./config/message-service/application.yml:/config/application.yml
     networks:
@@ -97,6 +97,7 @@ services:
       - redis
       - eureka-server
       - kafka_broker1
+      - mongo
 
   postgres:
     image: postgres:13

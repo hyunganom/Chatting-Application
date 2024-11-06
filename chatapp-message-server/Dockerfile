@@ -6,4 +6,5 @@ ARG JAR_FILE=target/*.jar
 COPY ${JAR_FILE} app.jar
 
 # 3. 컨테이너 시작 시 실행할 명령어
-ENTRYPOINT ["java", "-jar", "/app.jar"]
+ENTRYPOINT ["java", "-Dspring.config.location=/config/application.yml", "-jar", "app.jar"]
+
