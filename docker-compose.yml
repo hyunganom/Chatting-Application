@@ -208,7 +208,7 @@ services:
 
   kafka_exporter1:
     image: danielqsj/kafka-exporter
-    command: --kafka.server=kafka_broker_1:29092 --kafka.server=kafka_broker_2:29093 --kafka.server=kafka_broker_3:29094
+    command: --kafka.server=kafka_broker1:29092 --kafka.server=kafka_broker2:29093 --kafka.server=kafka_broker3:29094
     ports:
       - "9308:9308"  # kafka_exporter 기본 포트
     depends_on:
