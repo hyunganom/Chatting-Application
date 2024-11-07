@@ -206,11 +206,104 @@ services:
     networks:
       - app-network
 
+  kafka_exporter1:
+    image: danielqsj/kafka-exporter
+    command: --kafka.server=kafka_broker_1:29092 --kafka.server=kafka_broker_2:29093 --kafka.server=kafka_broker_3:29094
+    ports:
+      - "9308:9308"  # kafka_exporter 기본 포트
+    depends_on:
+      - kafka_broker_1
+      - kafka_broker_2
+      - kafka_broker_3
+
+  postgres_exporter1:
+    image: wrouesnel/postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://chatuser:chatpass@postgres_container:5432/chatapp_db?sslmode=disable"
+    depends_on:
+      - postgres
+    ports:
+      - "9187:9187"
+
+  redis_exporter1:
+    image: oliver006/redis_exporter
+    environment:
+      REDIS_ADDR: "redis://redis_container:6379"
+    depends_on:
+      - redis
+    ports:
+      - "9121:9121"
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+
+  node_exporter:
+    image: prom/node-exporter
+    restart: always
+    ports:
+      - "9100:9100"
+
+  elasticsearch:
+    image: elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: logstash:7.17.9
+    volumes:
+      - ./logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /Users/hyunjae/desktop/logs:/var/log  # 모든 로그 파일 디렉터리 마운트
+    ports:
+      - "5044:5044"  # Filebeat와의 통신 포트
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    image: kibana:7.17.9
+    volumes:
+      - ./kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.17.9
+    user: root
+    volumes:
+      - ./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /Users/hyunjae/desktop/logs:/var/log:ro  # 모든 로그 파일 디렉터리 마운트
+    depends_on:
+      - logstash
+
+
 networks:
   app-network:
-    driver: bridge
 
 volumes:
   postgres_data:
   mongo_data:
   redis_data:
+  grafana_data:
+  es_data:
