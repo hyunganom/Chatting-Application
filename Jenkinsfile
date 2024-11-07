@@ -18,47 +18,55 @@ pipeline {
         }
 
         stage('Build Modules') {
-            steps {
-                dir('Chatting-Application') { // 프로젝트 루트 디렉토리로 이동
-                    parallel (
-                        "Build Eureka Server": {
-                            dir('chatapp-eureka-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
-                        },
-                        "Build API Gateway": {
-                            dir('chatapp-apigateway-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
-                        },
-                        "Build User Server": {
-                            dir('chatapp-user-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
-                        },
-                        "Build Chat Server": {
-                            dir('chatapp-chat-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
-                        },
-                        "Build Websocket Server": {
-                            dir('chatapp-websocket-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
-                        },
-                        "Build Message Server": {
-                            dir('chatapp-message-server') {
-                                sh 'mvn clean package -DskipTests'
-                            }
+            parallel {
+                stage('Build Eureka Server') {
+                    steps {
+                        dir('Chatting-Application/chatapp-eureka-server') {
+                            sh 'mvn clean package -DskipTests'
                         }
-                    )
+                    }
+                }
+                stage('Build API Gateway') {
+                    steps {
+                        dir('Chatting-Application/chatapp-apigateway-server') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
+                }
+                stage('Build User Server') {
+                    steps {
+                        dir('Chatting-Application/chatapp-user-server') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
+                }
+                stage('Build Chat Server') {
+                    steps {
+                        dir('Chatting-Application/chatapp-chat-server') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
+                }
+                stage('Build Websocket Server') {
+                    steps {
+                        dir('Chatting-Application/chatapp-websocket-server') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
+                }
+                stage('Build Message Server') {
+                    steps {
+                        dir('Chatting-Application/chatapp-message-server') {
+                            sh 'mvn clean package -DskipTests'
+                        }
+                    }
                 }
             }
         }
 
         stage('Build and Push Docker Images') {
             steps {
-                dir('Chatting-Application') { // 프로젝트 루트 디렉토리로 이동
+                dir('Chatting-Application') {
                     script {
                         def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
                         def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
@@ -82,7 +90,7 @@ pipeline {
 
         stage('Deploy with Docker Compose') {
             steps {
-                dir('Chatting-Application') { // 프로젝트 루트 디렉토리로 이동
+                dir('Chatting-Application') {
                     script {
                         sh '''
                             docker-compose down
