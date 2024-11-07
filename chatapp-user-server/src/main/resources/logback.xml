@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- 로그 파일 저장 경로 설정 -->
-    <property name="LOG_PATH" value="${LOG_FILE_PATH:-/Users/hyunjae/desktop/logs}" />
+    <property name="LOG_PATH" value="${LOG_FILE_PATH:-/app/logs}" />
 
     <!-- 콘솔에 로그를 출력하는 Appender 설정 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
@@ -29,7 +29,7 @@
     </appender>
 
     <!-- 특정 패키지의 로그 레벨 설정 (선택 사항) -->
-    <logger name="chat.userserver" level="DEBUG">
+    <logger name="chatapp-user-server" level="DEBUG">
         <appender-ref ref="CONSOLE"/>
         <appender-ref ref="FILE"/>
     </logger>
