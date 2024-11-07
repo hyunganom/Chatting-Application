@@ -212,9 +212,9 @@ services:
     ports:
       - "9308:9308"  # kafka_exporter 기본 포트
     depends_on:
-      - kafka_broker_1
-      - kafka_broker_2
-      - kafka_broker_3
+      - kafka_broker1
+      - kafka_broker2
+      - kafka_broker3
 
   postgres_exporter1:
     image: wrouesnel/postgres_exporter
