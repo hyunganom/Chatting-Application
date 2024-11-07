@@ -253,7 +253,7 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
 
-  node_exporter:
+  node_exporter1:
     image: prom/node-exporter
     container_name: node_exporter
     restart: always
