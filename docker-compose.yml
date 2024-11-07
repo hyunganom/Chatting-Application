@@ -281,7 +281,7 @@ services:
   logstash:
     image: logstash:7.17.9
     volumes:
-      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logstash.conf:/etc/logstash.conf:ro
       - ./logs/postgresql:/var/log/postgresql:ro  # PostgreSQL 로그
       - ./logs/redis:/var/log/redis:ro           # Redis 로그
       - ./logs/kafka:/var/log/kafka_logs:ro      # Kafka 로그
@@ -293,7 +293,7 @@ services:
   kibana:
     image: kibana:7.17.9
     volumes:
-      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+      - ./kibana.yml:/etc/kibana/kibana.yml:ro
     ports:
       - "5601:5601"
     depends_on:
@@ -303,7 +303,7 @@ services:
     image: docker.elastic.co/beats/filebeat:7.17.9
     user: root
     volumes:
-      - ./filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./filebeat.yml:/etc/filebeat/filebeat.yml:ro
       - /Users/hyunjae/desktop/logs:/var/log:ro  # 모든 로그 파일 디렉터리 마운트
     depends_on:
       - logstash
