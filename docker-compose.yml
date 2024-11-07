@@ -39,10 +39,8 @@ services:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/user-service/application.yml:/config/application.yml
-      - ./logs/chat-service:/app/logs
     networks:
       - app-network
     depends_on:
@@ -57,10 +55,8 @@ services:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/chat-service/application.yml:/config/application.yml
-      - ./logs/chat-service:/app/logs
     networks:
       - app-network
     depends_on:
@@ -75,10 +71,8 @@ services:
       - "8084:8084"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
-      - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/websocket-service/application.yml:/config/application.yml
-      - ./logs/chat-service:/app/logs
     networks:
       - app-network
     depends_on:
@@ -92,9 +86,6 @@ services:
     container_name: message-service
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chat_db
-      - LOG_FILE_PATH=/app/logs
-    volumes:
-      - ./logs/chat-service:/app/logs
     ports:
       - "8083:8083"
     networks:
@@ -114,8 +105,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgresql.conf:/etc/postgresql/postgresql.conf
-      - ./logs/postgresql:/var/log/postgresql  # 로그 디렉토리 마운트
+      - /Users/hyunjae/desktop/postgresql.conf:/etc/postgresql/postgresql.conf
+      - /Users/hyunjae/desktop/logs/postgresql:/var/log/postgresql
     command: [ "postgres", "-c", "config_file=/etc/postgresql/postgresql.conf" ]
     networks:
       - app-network
@@ -249,10 +240,11 @@ services:
     ports:
       - "9090:9090"
     volumes:
-      - /var/jenkins_home/workspace/eureka-server/prometheus.yml:/etc/prometheus/prometheus.yml
+      - /Users/hyunjae/desktop/prometheus.yml:/etc/prometheus/prometheus.yml
 
   grafana:
     image: grafana/grafana
+    container_name: grafana_container
     restart: always
     ports:
       - "3000:3000"
@@ -263,12 +255,14 @@ services:
 
   node_exporter:
     image: prom/node-exporter
+    container_name: node_exporter
     restart: always
     ports:
       - "9100:9100"
 
   elasticsearch:
     image: elasticsearch:7.17.9
+    container_name: elasticsearch_container
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -280,11 +274,10 @@ services:
 
   logstash:
     image: logstash:7.17.9
+    container_name: logstash_container
     volumes:
-      - /var/jenkins_home/workspace/eureka-server/logstash.conf:/etc/logstash.conf:ro
-      - ./logs/postgresql:/var/log/postgresql:ro  # PostgreSQL 로그
-      - ./logs/redis:/var/log/redis:ro           # Redis 로그
-      - ./logs/kafka:/var/log/kafka_logs:ro      # Kafka 로그
+      - /Users/hyunjae/desktop/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /Users/hyunjae/desktop/logs:/var/log  # 모든 로그 파일 디렉터리 마운트
     ports:
       - "5044:5044"  # Filebeat와의 통신 포트
     depends_on:
@@ -292,8 +285,9 @@ services:
 
   kibana:
     image: kibana:7.17.9
+    container_name: kibana_container
     volumes:
-      - /var/jenkins_home/workspace/eureka-server/kibana.yml:/etc/kibana/kibana.yml:ro
+      - /Users/hyunjae/desktop/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:
       - "5601:5601"
     depends_on:
@@ -301,9 +295,10 @@ services:
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.9
+    container_name: filebeat_container
     user: root
     volumes:
-      - /var/jenkins_home/workspace/eureka-server/filebeat.yml:/etc/filebeat/filebeat.yml:ro
+      - /Users/hyunjae/desktop/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
       - /Users/hyunjae/desktop/logs:/var/log:ro  # 모든 로그 파일 디렉터리 마운트
     depends_on:
       - logstash
