@@ -244,7 +244,7 @@ services:
 
   grafana:
     image: grafana/grafana
-    container_name: grafana_container
+    container_name: grafana
     restart: always
     ports:
       - "3000:3000"
@@ -255,14 +255,14 @@ services:
 
   node_exporter1:
     image: prom/node-exporter
-    container_name: node_exporter
+    container_name: node
     restart: always
     ports:
       - "9100:9100"
 
   elasticsearch:
     image: elasticsearch:7.17.9
-    container_name: elasticsearch_container
+    container_name: elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -274,7 +274,7 @@ services:
 
   logstash:
     image: logstash:7.17.9
-    container_name: logstash_container
+    container_name: logstash
     volumes:
       - /Users/hyunjae/desktop/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
       - /Users/hyunjae/desktop/logs:/var/log  # 모든 로그 파일 디렉터리 마운트
@@ -285,7 +285,7 @@ services:
 
   kibana:
     image: kibana:7.17.9
-    container_name: kibana_container
+    container_name: kibana
     volumes:
       - /Users/hyunjae/desktop/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
     ports:
@@ -295,7 +295,7 @@ services:
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.9
-    container_name: filebeat_container
+    container_name: filebeat
     user: root
     volumes:
       - /Users/hyunjae/desktop/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
