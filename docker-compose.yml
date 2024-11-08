@@ -206,7 +206,7 @@ services:
     networks:
       - app-network
 
-  kafka_exporter1:
+  kafka_exporter:
     image: danielqsj/kafka-exporter
     command: --kafka.server=kafka_broker1:29092 --kafka.server=kafka_broker2:29093 --kafka.server=kafka_broker3:29094
     ports:
@@ -215,8 +215,10 @@ services:
       - kafka_broker1
       - kafka_broker2
       - kafka_broker3
+    networks:
+      - app-network
 
-  postgres_exporter1:
+  postgres_exporter:
     image: wrouesnel/postgres_exporter
     environment:
       DATA_SOURCE_NAME: "postgresql://chatuser:chatpass@postgres:5432/chatapp_db?sslmode=disable"
@@ -224,8 +226,10 @@ services:
       - postgres
     ports:
       - "9187:9187"
+    networks:
+      - app-network
 
-  redis_exporter1:
+  redis_exporter:
     image: oliver006/redis_exporter
     environment:
       REDIS_ADDR: "redis://redis:6379"
@@ -233,6 +237,8 @@ services:
       - redis
     ports:
       - "9121:9121"
+    networks:
+      - app-network
 
   prometheus:
     image: prom/prometheus
@@ -241,6 +247,8 @@ services:
       - "9090:9090"
     volumes:
       - /Users/hyunjae/desktop/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
 
   grafana:
     image: grafana/grafana
@@ -251,13 +259,17 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
 
-  node_exporter1:
+  node_exporter:
     image: prom/node-exporter
     container_name: node
     restart: always
     ports:
       - "9100:9100"
+    networks:
+      - app-network
 
   elasticsearch:
     image: elasticsearch:7.17.9
@@ -269,6 +281,8 @@ services:
       - "9200:9200"
     volumes:
       - es_data:/usr/share/elasticsearch/data
+    networks:
+      - app-network
 
   logstash:
     image: logstash:7.17.9
@@ -279,6 +293,8 @@ services:
       - "5044:5044"  # Filebeat와의 통신 포트
     depends_on:
       - elasticsearch
+    networks:
+      - app-network
 
   kibana:
     image: kibana:7.17.9
@@ -289,6 +305,8 @@ services:
       - "5601:5601"
     depends_on:
       - elasticsearch
+    networks:
+      - app-network
 
   filebeat:
     image: docker.elastic.co/beats/filebeat:7.17.9
@@ -298,6 +316,8 @@ services:
       - /Users/hyunjae/desktop/logs:/var/log:ro  # 모든 로그 파일 디렉터리 마운트
     depends_on:
       - logstash
+    networks:
+      - app-network
 
 
 networks:
