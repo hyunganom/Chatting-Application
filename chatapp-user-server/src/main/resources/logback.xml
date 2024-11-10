@@ -2,7 +2,7 @@
 <configuration>
 
     <!-- 로그 파일 저장 경로 설정 -->
-    <property name="LOG_PATH" value="${LOG_FILE_PATH:-/app/logs}" />
+    <property name="LOG_PATH" value="${LOG_FILE_PATH:-/Users/hyunjae/desktop/logs}" />
 
     <!-- 콘솔에 로그를 출력하는 Appender 설정 -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
