@@ -39,8 +39,10 @@ services:
       - "8081:8081"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - LOG_FILE_PATH=/app/logs  # 환경 변수 추가
     volumes:
       - ./config/user-service/application.yml:/config/application.yml
+      - /Users/hyunjae/desktop/logs:/app/logs
     networks:
       - app-network
     depends_on:
@@ -55,8 +57,10 @@ services:
       - "8082:8082"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/chat-service/application.yml:/config/application.yml
+      - /Users/hyunjae/desktop/logs:/app/logs
     networks:
       - app-network
     depends_on:
@@ -71,8 +75,10 @@ services:
       - "8084:8084"
     environment:
       - SPRING_PROFILES_ACTIVE=prod
+      - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/websocket-service/application.yml:/config/application.yml
+      - /Users/hyunjae/desktop/logs:/app/logs
     networks:
       - app-network
     depends_on:
@@ -86,6 +92,9 @@ services:
     container_name: message-service
     environment:
       - SPRING_DATA_MONGODB_URI=mongodb://mongo:27017/chat_db
+      - LOG_FILE_PATH=/app/logs  # 환경 변수 추가
+    volumes:
+      - /Users/hyunjae/desktop/logs:/app/logs
     ports:
       - "8083:8083"
     networks:
