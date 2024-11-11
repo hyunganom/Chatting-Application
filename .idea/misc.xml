@@ -19,7 +19,11 @@
       <set>
         <option value="$PROJECT_DIR$/untitled/pom.xml" />
         <option value="$PROJECT_DIR$/../chatapp-apigateway-server/pom.xml" />
+        <option value="$PROJECT_DIR$/../chatapp-chat-server/pom.xml" />
         <option value="$PROJECT_DIR$/../chatapp-eureka-server/pom.xml" />
+        <option value="$PROJECT_DIR$/../chatapp-message-server/pom.xml" />
+        <option value="$PROJECT_DIR$/../chatapp-user-server/pom.xml" />
+        <option value="$PROJECT_DIR$/../chatapp-websocket-server/pom.xml" />
       </set>
     </option>
     <option name="workspaceImportForciblyTurnedOn" value="true" />
