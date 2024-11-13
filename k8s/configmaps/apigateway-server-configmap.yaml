@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: apigateway-server-config
+  namespace: chatapp
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  application.yml: |
+    spring:
+      application:
+        name: apigateway-server
+      cloud:
+        gateway:
+          default-filters:
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials
+          routes:
+            - id: user-service
+              uri: lb://user-service
+              predicates:
+                - Path=/users/**
+            - id: chat-service
+              uri: lb://chat-service
+              predicates:
+                - Path=/chatrooms/**
+            - id: message-service
+              uri: lb://message-service
+              predicates:
+                - Path=/messages/**
+            - id: websocket_service
+              uri: lb://websocket-service
+              predicates:
+                - Path=/ws/**
+              cors:
+                allowedOriginPatterns:
+                  - "http://localhost:8000"
+                  - "http://localhost:3001"
+                  - "http://localhost:8084"
+                  - "http://websocket-service:8084"
+                allowedMethods:
+                  - "*"
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+
+    eureka:
+      client:
+        service-url:
+          defaultZone: http://eureka-server:8761/eureka/
+
+    server:
+      port: 8000
+
+    logging:
+      file:
+        path: /var/log/spring
+      level:
+        root: INFO
+        org:
+          springframework.cache: DEBUG
+          springframework.data.redis.cache: DEBUG
+        chat.apigatewayserver: DEBUG
