@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apigateway-server
+  namespace: chatapp
+  labels:
+    app: apigateway-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: apigateway-server
+  template:
+    metadata:
+      labels:
+        app: apigateway-server
+    spec:
+      containers:
+        - name: apigateway-server
+          image: rheonik/chat-apigateway-server:1.0
+          ports:
+            - containerPort: 8000
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: apigateway-server-config
+                  key: SPRING_PROFILES_ACTIVE
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config/application.yml
+              subPath: application.yml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: apigateway-server-config

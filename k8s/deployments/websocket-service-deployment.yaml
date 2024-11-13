@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: websocket-service
+  namespace: chatapp
+  labels:
+    app: websocket-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: websocket-service
+  template:
+    metadata:
+      labels:
+        app: websocket-service
+    spec:
+      containers:
+        - name: websocket-service
+          image: rheonik/chat-websocket-service:1.0
+          ports:
+            - containerPort: 8084
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-service-config
+                  key: SPRING_PROFILES_ACTIVE
+            - name: LOG_FILE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: websocket-service-config
+                  key: LOG_FILE_PATH
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config/application.yml
+              subPath: application.yml
+            - name: logs-volume
+              mountPath: /app/logs
+      volumes:
+        - name: config-volume
+          configMap:
+            name: websocket-service-config
+        - name: logs-volume
+          emptyDir: {}
