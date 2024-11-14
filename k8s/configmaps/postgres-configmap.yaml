@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-config
+  namespace: chatapp
+data:
+  postgresql.conf: |
+    logging_collector = on
+    log_directory = '/var/log/postgresql'
+    log_filename = 'postgresql-%Y-%m-%d.log'
+    
+    # 로그 상세 설정
+    log_statement = 'all'  # 모든 SQL 쿼리 기록
+    log_duration = on      # 쿼리 실행 시간 기록
+    log_min_duration_statement = 0  # 모든 쿼리 기록
+
+    # 로그 라인 프리픽스 (필요에 따라 수정 가능)
+    log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+    
+    # 기타 설정
+    listen_addresses = '*'  # 모든 네트워크 인터페이스에서 수신
+    ssl = off               # SSL 사용 안 함

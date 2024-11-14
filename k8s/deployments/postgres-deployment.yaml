@@ -2,9 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: chatapp
-  labels:
-    app: postgres
 spec:
   replicas: 1
   selector:
@@ -22,24 +19,27 @@ spec:
             - containerPort: 5432
           env:
             - name: POSTGRES_USER
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_USER
+              value: "chatuser"
             - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_PASSWORD
+              value: "chatpass"
             - name: POSTGRES_DB
-              valueFrom:
-                secretKeyRef:
-                  name: postgres-secret
-                  key: POSTGRES_DB
+              value: "chatapp_db"
           volumeMounts:
-            - name: postgres-storage
+            - name: postgres-data
               mountPath: /var/lib/postgresql/data
+            - name: postgres-conf
+              mountPath: /etc/postgresql/postgresql.conf
+              subPath: postgresql.conf
+            - name: postgres-logs
+              mountPath: /var/log/postgresql
       volumes:
-        - name: postgres-storage
+        - name: postgres-data
           persistentVolumeClaim:
             claimName: postgres-pvc
+        - name: postgres-conf
+          configMap:
+            name: postgres-config
+        - name: postgres-logs
+          hostPath:
+            path: /Users/hyunjae/desktop/logs/postgresql
+            type: Directory
