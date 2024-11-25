@@ -7,7 +7,6 @@ pipeline {
 
     environment {
         DOCKERHUB_CREDENTIALS = credentials('dockerhub-credentials-id')
-        DOCKER_BUILDKIT = '0'  // BuildKit 비활성화
     }
 
     stages {
@@ -42,16 +41,15 @@ pipeline {
             }
         }
 
-        // 필요한 경우 Chat Server 단계 활성화
-        // stage('Build Chat Server') {
-        //     steps {
-        //         dir('chatapp-chat-server') {
-        //             sh 'mvn clean package -DskipTests'
-        //         }
-        //     }
-        // }
+        stage('Build Chat Server') {
+            steps {
+                dir('chatapp-chat-server') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
 
-        stage('Build Websocket Server') {
+        stage('Build Websoket Server') {
             steps {
                 dir('chatapp-websocket-server') {
                     sh 'mvn clean package -DskipTests'
@@ -67,26 +65,28 @@ pipeline {
             }
         }
 
+
         stage('Build Docker Images') {
             steps {
                 script {
-                    // Docker 이미지를 직접 빌드
-                    sh 'docker build -t rheonik/chat-eureka-server:1.0 chatapp-eureka-server/'
-                    sh 'docker build -t rheonik/chat-apigateway-server:1.0 chatapp-apigateway-server/'
-                    sh 'docker build -t rheonik/chat-user-service:1.0 chatapp-user-server/'
-                    sh 'docker build -t rheonik/chat-websocket-service:1.0 chatapp-websocket-server/'
-                    sh 'docker build -t rheonik/chat-message-service:1.0 chatapp-message-server/'
+                    def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
+                    def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
+                    def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
+                    def chatImage = docker.build("rheonik/chat-chat-service:1.0", "chatapp-chat-server/")
+                    def websocketImage = docker.build("rheonik/chat-websocket-service:1.0", "chatapp-websocket-server/")
+                    def messageImage = docker.build("rheonik/chat-message-service:1.0", "chatapp-message-server/")
 
                     // 이미지 존재 여부 확인
                     sh 'docker images'
 
-                    // Docker 레지스트리에 로그인하고 이미지 푸시
+
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
-                        sh 'docker push rheonik/chat-eureka-server:1.0'
-                        sh 'docker push rheonik/chat-apigateway-server:1.0'
-                        sh 'docker push rheonik/chat-user-service:1.0'
-                        sh 'docker push rheonik/chat-websocket-service:1.0'
-                        sh 'docker push rheonik/chat-message-service:1.0'
+                        eurekaImage.push()
+                        apiGatewayImage.push()
+                        userImage.push()
+                        chatImage.push()
+                        websocketImage.push()
+                        messageImage.push()
                     }
                 }
             }
