@@ -10,22 +10,22 @@ import org.springframework.stereotype.Service;
 @Service
 public class MessageListenerService {
 
-    private static final Logger logger = LoggerFactory.getLogger(MessageListenerService.class);
-
-    @Autowired
-    private MessageService messageService;
-
-    @KafkaListener(topics = "chat-send", groupId = "message_group", containerFactory = "kafkaListenerContainerFactory")
-    public void consume(Message message) {
-        if (message != null && message.getRoomId() != null) {
-            logger.info("Kafka message received for roomId: {}. Message ID: {}", message.getRoomId(), message.getId());
-            try {
-                messageService.saveMessage(message.getRoomId(), message);
-            } catch (Exception e) {
-                logger.error("Error processing message with ID: {} for roomId: {}: {}", message.getId(), message.getRoomId(), e.getMessage());
-            }
-        } else {
-            logger.warn("Invalid or null message received from Kafka: {}", message);
-        }
-    }
+//    private static final Logger logger = LoggerFactory.getLogger(MessageListenerService.class);
+//
+//    @Autowired
+//    private MessageService messageService;
+//
+//    @KafkaListener(topics = "chat-send", groupId = "message_group", containerFactory = "kafkaListenerContainerFactory")
+//    public void consume(Message message) {
+//        if (message != null && message.getRoomId() != null) {
+//            logger.info("Kafka message received for roomId: {}. Message ID: {}", message.getRoomId(), message.getId());
+//            try {
+//                messageService.saveMessage(message.getRoomId(), message);
+//            } catch (Exception e) {
+//                logger.error("Error processing message with ID: {} for roomId: {}: {}", message.getId(), message.getRoomId(), e.getMessage());
+//            }
+//        } else {
+//            logger.warn("Invalid or null message received from Kafka: {}", message);
+//        }
+//    }
 }

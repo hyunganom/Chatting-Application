@@ -1,5 +1,6 @@
 package chat.messageserver.service;
 
+import chat.messageserver.event.MessageEvent;
 import chat.messageserver.model.Message;
 import chat.messageserver.repository.MessageRepository;
 import org.slf4j.Logger;
@@ -8,63 +9,39 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
+import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
 public class MessageService {
 
     private static final Logger logger = LoggerFactory.getLogger(MessageService.class);
-    private static final String TOPIC_PREFIX = "chatroom-";
-
-    @Autowired
-    private KafkaTemplate<String, Message> kafkaTemplate;
+    private static final String MESSAGE_TOPIC = "message-events";
 
     @Autowired
     private MessageRepository messageRepository;
 
-    public void saveMessage(String roomId, Message message) {
-        message.setRoomId(roomId);
-        message.setId(UUID.randomUUID().toString());
-        message.setTimestamp(System.currentTimeMillis());
+    @Autowired
+    private KafkaTemplate<String, MessageEvent> kafkaTemplate;
 
-        logger.info("Processing message with ID: {} for room ID: {}", message.getId(), roomId);
-
-        // 메시지를 데이터베이스에 저장
-        try {
-            messageRepository.save(message);
-            logger.info("Message with ID: {} saved successfully to the database.", message.getId());
-        } catch (Exception e) {
-            logger.error("Error saving message with ID: {} to the database: {}", message.getId(), e.getMessage());
+    /**
+     * 메시지 저장
+     */
+    public void saveMessage(Message message) {
+        // 필수 필드 설정 및 검증
+        if (message.getId() == null) {
+            // message.setId(UUID.randomUUID().toString()); // ID가 Long 타입이라면 수정 필요
         }
-    }
-
-    public void sendMessage(String roomId, Message message) {
-        message.setRoomId(roomId);
-        message.setId(UUID.randomUUID().toString());
-        message.setTimestamp(System.currentTimeMillis());
-
-        logger.info("Sending message with ID: {} to Kafka topic: {}", message.getId(), TOPIC_PREFIX + roomId);
-
-        // Partition key를 null로 설정하여 라운드 로빈 방식으로 파티션에 분배
-        ListenableFuture<SendResult<String, Message>> future = kafkaTemplate.send(TOPIC_PREFIX + roomId, null, message);
-
-        future.addCallback(new ListenableFutureCallback<>() {
-            @Override
-            public void onSuccess(SendResult<String, Message> result) {
-                logger.info("Message with ID: {} sent successfully to Kafka topic: {}", message.getId(), result.getProducerRecord().topic());
-            }
-
-            @Override
-            public void onFailure(Throwable ex) {
-                logger.error("Error sending message with ID: {} to Kafka topic: {}. Error: {}", message.getId(), TOPIC_PREFIX + roomId, ex.getMessage());
-            }
-        });
+        if (message.getTimestamp() == null) {
+            message.setTimestamp(LocalDateTime.now());
+        }
 
         try {
             messageRepository.save(message);
@@ -74,8 +51,72 @@ public class MessageService {
         }
     }
 
+    /**
+     * 메시지 전송
+     */
+    public void sendMessage(Message message) {
+        // 필수 필드 설정 및 검증
+        if (message.getId() == null) {
+            // message.setId(UUID.randomUUID().toString()); // ID가 Long 타입이라면 수정 필요
+        }
+        if (message.getTimestamp() == null) {
+            message.setTimestamp(LocalDateTime.now());
+        }
 
-    public Page<Message> getMessagesByRoomId(String roomId, int page, int size) {
+        Long roomId = message.getRoomId();
+        if (roomId == null) {
+            throw new IllegalArgumentException("Room ID cannot be null");
+        }
+
+        // 이벤트 발행
+        MessageEvent event = new MessageEvent("SEND", message);
+
+        // Kafka로 메시지 전송
+        kafkaTemplate.send(MESSAGE_TOPIC, null, event);
+
+        logger.info("Message with ID: {} sent successfully to Kafka topic: {}", message.getId(), MESSAGE_TOPIC);
+    }
+
+    /**
+     * 메시지 삭제
+     */
+    public void deleteMessage(String messageId) {
+        Message message = messageRepository.findById(messageId).orElse(null);
+        if (message != null) {
+            messageRepository.delete(message);
+            // 이벤트 발행
+            MessageEvent event = new MessageEvent("DELETE", message);
+            kafkaTemplate.send(MESSAGE_TOPIC, null, event);
+            logger.info("Message with ID: {} deleted and event sent to Kafka.", messageId);
+        } else {
+            logger.warn("Message with ID: {} not found.", messageId);
+        }
+    }
+
+    /**
+     * 메시지 이벤트 소비
+     */
+    @KafkaListener(
+            topics = "message-events",
+            groupId = "${spring.kafka.consumer.group-id}",
+            containerFactory = "kafkaListenerContainerFactory"
+    )
+    public void consumeMessageEvent(MessageEvent event) {
+        if ("SEND".equals(event.getAction())) {
+            Message message = event.getMessage();
+            saveMessage(message); // 메시지 저장
+        } else if ("DELETE".equals(event.getAction())) {
+            Message message = event.getMessage();
+            messageRepository.deleteById(message.getId());
+            logger.info("Message with ID: {} deleted from the database.", message.getId());
+        }
+    }
+
+    /**
+     * 특정 채팅방의 메시지 조회
+     */
+    // @Cacheable(value = "message::messages", key = "#roomId + '-' + #page + '-' + #size")
+    public Page<Message> getMessagesByRoomId(Long roomId, int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "timestamp"));
         logger.info("Fetching messages for roomId: {}, page: {}, size: {}", roomId, page, size);
         return messageRepository.findByRoomId(roomId, pageRequest);
