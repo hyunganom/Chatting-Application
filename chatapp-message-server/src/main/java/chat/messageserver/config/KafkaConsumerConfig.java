@@ -45,8 +45,8 @@ public class KafkaConsumerConfig {
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
         // JsonDeserializer 설정
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "chat.messageserver.model");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "chat.messageserver.model.MessageEvent");
+        props.put(JsonDeserializer.TRUSTED_PACKAGES, "chat.messageserver.event");
+        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "chat.messageserver.event.MessageEvent");
         props.put(JsonDeserializer.USE_TYPE_INFO_HEADERS, false); // 타입 정보 헤더 사용하지 않음
 
         return new DefaultKafkaConsumerFactory<>(
