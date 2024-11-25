@@ -49,24 +49,25 @@ services:
       - postgres
       - redis
       - eureka-server
+      - kafka_broker1
 
-  chat-service:
-    image: rheonik/chat-chat-service:1.0
-    container_name: chat-service
-    ports:
-      - "8082:8082"
-    environment:
-      - SPRING_PROFILES_ACTIVE=prod
-      - LOG_FILE_PATH=/app/logs
-    volumes:
-      - ./config/chat-service/application.yml:/config/application.yml
-      - /Users/hyunjae/desktop/logs:/app/logs
-    networks:
-      - app-network
-    depends_on:
-      - postgres
-      - redis
-      - eureka-server
+#  chat-service:
+#    image: rheonik/chat-chat-service:1.0
+#    container_name: chat-service
+#    ports:
+#      - "8082:8082"
+#    environment:
+#      - SPRING_PROFILES_ACTIVE=prod
+#      - LOG_FILE_PATH=/app/logs
+#    volumes:
+#      - ./config/chat-service/application.yml:/config/application.yml
+#      - /Users/hyunjae/desktop/logs:/app/logs
+#    networks:
+#      - app-network
+#    depends_on:
+#      - postgres
+#      - redis
+#      - eureka-server
 
   websocket-service:
     image: rheonik/chat-websocket-service:1.0
