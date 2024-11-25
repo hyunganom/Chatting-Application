@@ -70,22 +70,23 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    // BuildKit 비활성화로 인해 이미지를 로컬에 로드할 수 있게 됩니다.
-                    def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
-                    def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
-                    def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
-                    def websocketImage = docker.build("rheonik/chat-websocket-service:1.0", "chatapp-websocket-server/")
-                    def messageImage = docker.build("rheonik/chat-message-service:1.0", "chatapp-message-server/")
+                    // Docker 이미지를 직접 빌드
+                    sh 'docker build -t rheonik/chat-eureka-server:1.0 chatapp-eureka-server/'
+                    sh 'docker build -t rheonik/chat-apigateway-server:1.0 chatapp-apigateway-server/'
+                    sh 'docker build -t rheonik/chat-user-service:1.0 chatapp-user-server/'
+                    sh 'docker build -t rheonik/chat-websocket-service:1.0 chatapp-websocket-server/'
+                    sh 'docker build -t rheonik/chat-message-service:1.0 chatapp-message-server/'
 
-                    // 빌드된 이미지 확인
+                    // 이미지 존재 여부 확인
                     sh 'docker images'
 
+                    // Docker 레지스트리에 로그인하고 이미지 푸시
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
-                        eurekaImage.push()
-                        apiGatewayImage.push()
-                        userImage.push()
-                        websocketImage.push()
-                        messageImage.push()
+                        sh 'docker push rheonik/chat-eureka-server:1.0'
+                        sh 'docker push rheonik/chat-apigateway-server:1.0'
+                        sh 'docker push rheonik/chat-user-service:1.0'
+                        sh 'docker push rheonik/chat-websocket-service:1.0'
+                        sh 'docker push rheonik/chat-message-service:1.0'
                     }
                 }
             }
