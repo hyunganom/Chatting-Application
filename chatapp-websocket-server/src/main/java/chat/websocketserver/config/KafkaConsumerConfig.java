@@ -1,8 +1,11 @@
 package chat.websocketserver.config;
 
+import chat.websocketserver.event.MessageEvent;
+import chat.websocketserver.event.UserPresenceEvent;
 import chat.websocketserver.model.Message;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.annotation.EnableKafka;
@@ -19,32 +22,55 @@ import java.util.Map;
 @Configuration
 public class KafkaConsumerConfig {
 
+    @Value("${spring.kafka.bootstrap-servers}")
+    private String bootstrapServers;
+
+    // MessageEvent ConsumerFactory 및 ListenerContainerFactory
     @Bean
-    public ConsumerFactory<String, Message> consumerFactory() {
+    public ConsumerFactory<String, MessageEvent> messageEventConsumerFactory() {
+        JsonDeserializer<MessageEvent> deserializer = new JsonDeserializer<>(MessageEvent.class);
+        deserializer.addTrustedPackages("*");
+
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "kafka_broker1:9092,kafka_broker1:9093,kafka_broker1:9094");
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, "websocket_group");
-        // 가장 최신의 메시지부터 소비하도록 설정
-        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "message_event_group");
 
-        // Deserializer 설정
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
-
-        // ErrorHandlingDeserializer의 delegate 설정
-        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
-
-        // JsonDeserializer 설정
-        props.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
-        props.put(JsonDeserializer.VALUE_DEFAULT_TYPE, "chat.websocketserver.model.Message");
-
-        return new DefaultKafkaConsumerFactory<>(props);
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer);
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, Message> kafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, Message> factory = new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(consumerFactory());
+    public ConcurrentKafkaListenerContainerFactory<String, MessageEvent> messageEventKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, MessageEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(messageEventConsumerFactory());
+        return factory;
+    }
+
+    // UserPresenceEvent ConsumerFactory 및 ListenerContainerFactory
+    @Bean
+    public ConsumerFactory<String, UserPresenceEvent> userPresenceEventConsumerFactory() {
+        JsonDeserializer<UserPresenceEvent> deserializer = new JsonDeserializer<>(UserPresenceEvent.class);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeMapperForKey(false); // 헤더에 타입 정보가 없는 경우 기본 타입 사용
+
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "user_presence_group");
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer);
+    }
+
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent> userPresenceKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(userPresenceEventConsumerFactory());
         return factory;
     }
 }

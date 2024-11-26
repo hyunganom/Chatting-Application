@@ -124,7 +124,12 @@
 
     // WebSocket 연결 및 이전 메시지 로드
     function connect() {
-        var socket = new SockJS('http://localhost:8000/ws');  // Gateway를 통해 WebSocket 연결
+        if (!sessionId) {
+            alert("Please login first!");
+            return;
+        }
+
+        var socket = new SockJS(`http://localhost:8000/ws?sessionId=${sessionId}&roomId=${roomId}`);  // WebSocket 연결 시 sessionId와 roomId를 URL에 포함
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
@@ -134,6 +139,14 @@
                 console.log('Message received from WebSocket:', message);  // 수신된 메시지 로그 확인
                 showMessage(message);  // 수신된 메시지를 화면에 표시
             });
+
+            // 유저 목록 구독
+            stompClient.subscribe(`/topic/chatroom-${roomId}-users`, function (messageOutput) {
+                var users = JSON.parse(messageOutput.body);
+                console.log('Users in room:', users);
+                displayUserList(users);
+            });
+
             loadPreviousMessages();  // 이전 메시지 로드
         }, function (error) {
             console.error('WebSocket connection error:', error); // 연결 에러 확인
@@ -174,13 +187,11 @@
         var messageInput = document.getElementById('message-input').value;
         if (messageInput.trim() !== "") {
             var message = {
-                'sender': username,  // 로그인한 사용자 이름을 sender로 사용
-                'content': messageInput,
-                'roomId': roomId
+                'content': messageInput
             };
 
             // WebSocket을 통해 메시지 전송
-            stompClient.send(`/app/chat/sendMessage`, {}, JSON.stringify(message));
+            stompClient.send("/app/chat.sendMessage", {}, JSON.stringify(message));
             console.log('Message sent:', message); // 전송된 메시지 확인
             document.getElementById('message-input').value = '';  // 입력 필드 초기화
         }
@@ -192,13 +203,26 @@
         var chatMessages = document.getElementById('chat-messages');
         if (chatMessages) {
             var messageElement = document.createElement('div');
-            messageElement.appendChild(document.createTextNode(message.sender + ": " + message.content));
+            messageElement.appendChild(document.createTextNode(message.userId + ": " + message.content));
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;  // 새로운 메시지가 도착하면 자동으로 스크롤
             console.log('New message displayed:', message);  // 화면에 출력된 메시지 로그
         } else {
             console.error('Chat messages element not found!');
         }
+    }
+
+    // 채팅방의 유저 목록을 표시
+    function displayUserList(users) {
+        var userListDiv = document.getElementById('userList');
+        if (!userListDiv) {
+            userListDiv = document.createElement('div');
+            userListDiv.id = 'userList';
+            document.getElementById('chat-section').appendChild(userListDiv);
+        }
+        userListDiv.innerHTML = '<h3>Users in room:</h3><ul>' + users.map(function(user) {
+            return '<li>' + user.username + '</li>';
+        }).join('') + '</ul>';
     }
 </script>
 </body>

@@ -1,6 +1,12 @@
 spring:
   application:
     name: websocket-service
+  redis:
+    host: redis
+    port: 6379
+  cache:
+    redis:
+      cache-prefix: "websocket::"
 
 server:
   port: 8084
@@ -19,4 +25,7 @@ eureka:
       group-id: websocket_group
       auto-offset-reset: earliest
       properties:
-        spring.json.trusted.packages: "chat.websocketserver.model, chat.messageserver.model, java.util, java.lang"
+        spring.json.trusted.packages: "chat.websocketserver.event, chat.messageserver.event, java.util, java.lang"
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
