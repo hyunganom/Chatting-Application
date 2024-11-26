@@ -8,16 +8,6 @@ spring:
     redis:
       cache-prefix: "websocket::"
 
-server:
-  port: 8084
-
-eureka:
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://eureka-server:8761/eureka/
-
   # Kafka
   kafka:
     bootstrap-servers: kafka_broker1:9092,kafka_broker2:9093,kafka_broker3:9094
@@ -29,3 +19,15 @@ eureka:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+
+server:
+  port: 8084
+
+eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://eureka-server:8761/eureka/
+
