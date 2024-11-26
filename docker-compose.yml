@@ -75,7 +75,6 @@ services:
     ports:
       - "8084:8084"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
       - LOG_FILE_PATH=/app/logs
     volumes:
       - ./config/websocket-service/application.yml:/config/application.yml
