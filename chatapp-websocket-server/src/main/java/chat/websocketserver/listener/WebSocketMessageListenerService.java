@@ -4,7 +4,6 @@ import chat.websocketserver.event.ChatRoomEvent;
 import chat.websocketserver.event.MessageEvent;
 import chat.websocketserver.model.Message;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
@@ -13,44 +12,84 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class WebSocketMessageListenerService {
 
-//    private static final Logger logger = LoggerFactory.getLogger(WebSocketMessageListenerService.class);
+    private static final String MESSAGE_TOPIC = "message-events";
+    private static final String CHATROOM_TOPIC_PREFIX = "/topic/chatroom-";
 
-    @Autowired
-    private SimpMessagingTemplate messagingTemplate;
+    private final SimpMessagingTemplate messagingTemplate;
 
+    /**
+     * 생성자 주입을 통해 SimpMessagingTemplate을 주입받음.
+     *
+     * @param messagingTemplate 메시징 템플릿
+     */
+    public WebSocketMessageListenerService(SimpMessagingTemplate messagingTemplate) {
+        this.messagingTemplate = messagingTemplate;
+    }
+
+    /**
+     * Kafka에서 메시지 이벤트를 소비하여 웹소켓을 통해 브로드캐스트함.
+     *
+     * @param event 메시지 이벤트
+     */
     @KafkaListener(
-            topics = "message-events",
+            topics = MESSAGE_TOPIC,
             groupId = "message_event_group",
             containerFactory = "messageEventKafkaListenerContainerFactory"
     )
     public void consumeMessageEvent(MessageEvent event) {
-        if ("SEND".equals(event.getAction())) {
+        try {
+            String action = event.getAction();
             Message message = event.getMessage();
             Long roomId = message.getRoomId();
-            // 브로드캐스트할 메시지 객체 생성 (필요 시 사용자 정보 포함)
-            log.info("Broadcasted message to /topic/chatroom-{}", roomId);
-            messagingTemplate.convertAndSend("/topic/chatroom-" + roomId, message);
-        } else if ("DELETE".equals(event.getAction())) {
-            // 메시지 삭제 처리 (필요 시)
-            Message message = event.getMessage();
-            Long roomId = message.getRoomId();
-            messagingTemplate.convertAndSend("/topic/chatroom-" + roomId + "-deletes", message.getId());
-            log.info("Broadcasted message deletion to /topic/chatroom-{}-deletes", roomId);
+
+            if ("SEND".equalsIgnoreCase(action)) {
+                messagingTemplate.convertAndSend(CHATROOM_TOPIC_PREFIX + roomId, message);
+                log.info("Broadcasted SEND message to {}", CHATROOM_TOPIC_PREFIX + roomId);
+            } else if ("DELETE".equalsIgnoreCase(action)) {
+                messagingTemplate.convertAndSend(CHATROOM_TOPIC_PREFIX + roomId + "-deletes", message.getId());
+                log.info("Broadcasted DELETE message to {}", CHATROOM_TOPIC_PREFIX + roomId + "-deletes");
+            } else {
+                log.warn("Received unknown action type: {}", action);
+            }
+        } catch (Exception e) {
+            log.error("Error processing MessageEvent: {}", event, e);
         }
     }
 
-    @KafkaListener(topics = "chatroom-events", groupId = "websocket_group", containerFactory = "kafkaListenerContainerFactory")
+    /**
+     * Kafka에서 채팅방 이벤트를 소비하여 웹소켓을 통해 브로드캐스트함.
+     *
+     * @param event 채팅방 이벤트
+     */
+    @KafkaListener(
+            topics = "chatroom-events",
+            groupId = "websocket_group",
+            containerFactory = "chatRoomEventKafkaListenerContainerFactory"
+    )
     public void consumeChatRoomEvent(ChatRoomEvent event) {
-        Long roomId = event.getChatRoom().getId();
-        if ("CREATE".equals(event.getAction())) {
-            messagingTemplate.convertAndSend("/topic/chatroom-" + roomId, "Chat room created: " + event.getChatRoom().getRoomName());
-            log.info("Broadcasted chat room creation to /topic/chatroom-{}", roomId);
-        } else if ("UPDATE".equals(event.getAction())) {
-            messagingTemplate.convertAndSend("/topic/chatroom-" + roomId, "Chat room updated: " + event.getChatRoom().getRoomName());
-            log.info("Broadcasted chat room update to /topic/chatroom-{}", roomId);
-        } else if ("DELETE".equals(event.getAction())) {
-            messagingTemplate.convertAndSend("/topic/chatroom-" + roomId, "Chat room deleted: " + event.getChatRoom().getRoomName());
-            log.info("Broadcasted chat room deletion to /topic/chatroom-{}", roomId);
+        try {
+            String action = event.getAction();
+            Long roomId = event.getChatRoom().getId();
+            String roomName = event.getChatRoom().getRoomName();
+
+            switch (action.toUpperCase()) {
+                case "CREATE":
+                    messagingTemplate.convertAndSend(CHATROOM_TOPIC_PREFIX + roomId, "Chat room created: " + roomName);
+                    log.info("Broadcasted CREATE chat room to {}", CHATROOM_TOPIC_PREFIX + roomId);
+                    break;
+                case "UPDATE":
+                    messagingTemplate.convertAndSend(CHATROOM_TOPIC_PREFIX + roomId, "Chat room updated: " + roomName);
+                    log.info("Broadcasted UPDATE chat room to {}", CHATROOM_TOPIC_PREFIX + roomId);
+                    break;
+                case "DELETE":
+                    messagingTemplate.convertAndSend(CHATROOM_TOPIC_PREFIX + roomId, "Chat room deleted: " + roomName);
+                    log.info("Broadcasted DELETE chat room to {}", CHATROOM_TOPIC_PREFIX + roomId);
+                    break;
+                default:
+                    log.warn("Received unknown action type: {}", action);
+            }
+        } catch (Exception e) {
+            log.error("Error processing ChatRoomEvent: {}", event, e);
         }
     }
 }
