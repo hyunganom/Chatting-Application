@@ -19,10 +19,14 @@ public class RedisConfig {
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
-        // 키 직렬화기 설정
-        template.setKeySerializer(new StringRedisSerializer());
-        // 값 직렬화기 설정
-        template.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        // 키와 값 모두에 StringRedisSerializer를 사용
+        StringRedisSerializer stringSerializer = new StringRedisSerializer();
+        template.setKeySerializer(stringSerializer);
+        template.setValueSerializer(stringSerializer);
+        template.setHashKeySerializer(stringSerializer);
+        template.setHashValueSerializer(stringSerializer);
+
         return template;
     }
 

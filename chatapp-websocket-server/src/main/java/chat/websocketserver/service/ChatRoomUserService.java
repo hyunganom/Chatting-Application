@@ -46,11 +46,11 @@ public class ChatRoomUserService {
 
         String key = generateChatRoomUsersKey(roomId);
         try {
-            redisTemplate.opsForSet().add(key, userId);
+            // 유저 ID를 문자열로 변환하여 저장
+            redisTemplate.opsForSet().add(key, userId.toString());
             logger.info("User ID: {} added to ChatRoom ID: {}", userId, roomId);
         } catch (DataAccessException e) {
             logger.error("Failed to add User ID: {} to ChatRoom ID: {}. Error: {}", userId, roomId, e.getMessage(), e);
-            // 예외를 다시 던져 호출자에게 알림
             throw e;
         }
     }
@@ -69,11 +69,11 @@ public class ChatRoomUserService {
 
         String key = generateChatRoomUsersKey(roomId);
         try {
-            redisTemplate.opsForSet().remove(key, userId);
+            // 유저 ID를 문자열로 변환하여 제거
+            redisTemplate.opsForSet().remove(key, userId.toString());
             logger.info("User ID: {} removed from ChatRoom ID: {}", userId, roomId);
         } catch (DataAccessException e) {
             logger.error("Failed to remove User ID: {} from ChatRoom ID: {}. Error: {}", userId, roomId, e.getMessage(), e);
-            // 예외를 다시 던져 호출자에게 알림
             throw e;
         }
     }
@@ -95,14 +95,9 @@ public class ChatRoomUserService {
             Set<Object> userIds = redisTemplate.opsForSet().members(key);
             if (userIds != null && !userIds.isEmpty()) {
                 Set<Long> longUserIds = userIds.stream()
-                        .filter(id -> id instanceof Long || (id instanceof String && isNumeric((String) id)))
-                        .map(id -> {
-                            if (id instanceof Long) {
-                                return (Long) id;
-                            } else {
-                                return Long.parseLong((String) id);
-                            }
-                        })
+                        .map(Object::toString)
+                        .filter(this::isNumeric)
+                        .map(Long::valueOf)
                         .collect(Collectors.toSet());
                 logger.info("Retrieved {} users from ChatRoom ID: {}", longUserIds.size(), roomId);
                 return longUserIds;
@@ -111,7 +106,6 @@ public class ChatRoomUserService {
             return Collections.emptySet();
         } catch (DataAccessException e) {
             logger.error("Failed to retrieve users from ChatRoom ID: {}. Error: {}", roomId, e.getMessage(), e);
-            // 예외를 다시 던져 호출자에게 알림
             throw e;
         }
     }
