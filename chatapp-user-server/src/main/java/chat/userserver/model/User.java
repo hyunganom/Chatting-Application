@@ -41,6 +41,12 @@ public class User implements Serializable {
     private String password;
 
     /**
+     * 카카오 소셜 로그인 필드
+     */
+    @Column(unique = true)
+    private String kakaoId; // 카카오 소셜 로그인을 위한 필드 추가
+
+    /**
      * 객체의 문자열 표현을 커스터마이징.
      * 비밀번호는 출력하지 않도록 설정.
      * @return 사용자 정보를 포함한 문자열

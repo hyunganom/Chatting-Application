@@ -29,4 +29,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return ID 리스트에 포함된 모든 사용자의 리스트를 반환
      */
     List<User> findByIdIn(List<Long> ids);
+    /**
+     * 카카오 ID로 사용자를 조회
+     *
+     * @param kakaoId 조회할 카카오 ID
+     * @return ID 리스트에 포함된 모든 사용자의 리스트를 반환
+     */
+    Optional<User> findByKakaoId(String kakaoId); // 카카오 ID로 조회하는 메서드 추가
 }

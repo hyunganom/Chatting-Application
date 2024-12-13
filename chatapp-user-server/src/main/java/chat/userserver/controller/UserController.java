@@ -1,7 +1,9 @@
 package chat.userserver.controller;
 
+import chat.userserver.Util.JwtTokenProvider;
+import chat.userserver.model.KakaoProfile;
 import chat.userserver.model.User;
-import chat.userserver.service.SessionService;
+import chat.userserver.service.KakaoService;
 import chat.userserver.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,18 +23,19 @@ public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 
+
+
     private final UserService userService;
-    private final SessionService sessionService;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final KakaoService kakaoService;
 
     /**
      * 생성자 주입을 통해 의존성을 주입.
-     *
-     * @param userService    사용자 서비스
-     * @param sessionService 세션 서비스
      */
-    public UserController(UserService userService, SessionService sessionService) {
+    public UserController(UserService userService, JwtTokenProvider jwtTokenProvider, KakaoService kakaoService) {
         this.userService = userService;
-        this.sessionService = sessionService;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.kakaoService = kakaoService;
     }
 
     /**
@@ -100,16 +103,83 @@ public class UserController {
      * @param sessionId 세션 ID
      * @return 유저 ID 또는 404 상태
      */
-    @GetMapping("/bySession")
-    public ResponseEntity<Long> getIdBySession(@RequestParam String sessionId) {
-        logger.info("세션 ID로 사용자 ID 조회 요청: 세션ID={}", sessionId);
-        Long userId = sessionService.getUserIdBySession(sessionId);
-        if (userId != null) {
-            logger.info("사용자 ID 조회 성공: 세션ID={}, 사용자ID={}", sessionId, userId);
-            return ResponseEntity.ok(userId);
-        } else {
-            logger.warn("세션 ID로 사용자 ID 조회 실패 또는 세션 만료: 세션ID={}", sessionId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+//    @GetMapping("/bySession")
+//    public ResponseEntity<Long> getIdBySession(@RequestParam String sessionId) {
+//        logger.info("세션 ID로 사용자 ID 조회 요청: 세션ID={}", sessionId);
+//        Long userId = sessionService.getUserIdBySession(sessionId);
+//        if (userId != null) {
+//            logger.info("사용자 ID 조회 성공: 세션ID={}, 사용자ID={}", sessionId, userId);
+//            return ResponseEntity.ok(userId);
+//        } else {
+//            logger.warn("세션 ID로 사용자 ID 조회 실패 또는 세션 만료: 세션ID={}", sessionId);
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+//        }
+//    }
+    /**
+     * 카카오 소셜 로그인 엔드포인트
+     *
+     * @param request 카카오로부터 받은 인증 코드가 포함된 요청
+     * @return JWT 토큰
+     */
+    @PostMapping("/kakao-login")
+    public ResponseEntity<String> kakaoLogin(@RequestBody KakaoLoginRequest request) {
+        String code = request.getCode();
+        logger.info("카카오 로그인 시도, 코드: {}", code);
+        try {
+            String accessToken = kakaoService.getAccessToken(code);
+            KakaoProfile kakaoProfile = kakaoService.getKakaoProfile(accessToken);
+
+            // 카카오 프로필에서 필요한 정보 추출
+            String kakaoId = String.valueOf(kakaoProfile.getId());
+            String username = kakaoProfile.getKakao_account().getEmail(); // 이메일이 없을 경우 다른 식별자로 대체 필요
+            if (username == null || username.isEmpty()) {
+                username = kakaoProfile.getKakao_account().getProfile().getNickname();
+            }
+
+            // 사용자 등록 또는 기존 사용자 조회
+            User user = userService.findUserByKakaoId(kakaoId);
+            if (user == null) {
+                user = userService.registerKakaoUser(kakaoId, username);
+            }
+
+            // JWT 토큰 생성
+            String token = jwtTokenProvider.generateToken(user.getUsername(), user.getId());
+            jwtTokenProvider.storeToken(token, user.getId());
+
+            logger.info("카카오 로그인 성공, 사용자: {}", username);
+            return ResponseEntity.ok(token);
+        } catch (Exception e) {
+            logger.error("카카오 로그인 실패: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kakao login failed");
         }
     }
+
+    /**
+     * Authorization 헤더에서 Bearer 토큰 추출
+     *
+     * @param authorizationHeader Authorization 헤더 값
+     * @return 토큰 문자열
+     */
+    private String extractToken(String authorizationHeader) {
+        if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+            return authorizationHeader.substring(7);
+        }
+        return null;
+    }
+
+    /**
+     * 카카오 로그인 요청을 위한 DTO 클래스
+     */
+    public static class KakaoLoginRequest {
+        private String code;
+
+        public String getCode() {
+            return code;
+        }
+
+        public void setCode(String code) {
+            this.code = code;
+        }
+    }
+
 }
