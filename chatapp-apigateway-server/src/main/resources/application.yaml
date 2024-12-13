@@ -10,18 +10,30 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/users/**
+          filters:
+            - RemoveRequestHeader=Cookie
+            - JwtAuthentication
+
         - id: chat-service
           uri: lb://chat-service
           predicates:
             - Path=/chatrooms/**
+          filters:
+            - JwtAuthentication
+
         - id: message-service
           uri: lb://message-service
           predicates:
             - Path=/messages/**
+          filters:
+            - JwtAuthentication
+
         - id: websocket_service
           uri: lb://websocket-service
           predicates:
             - Path=/ws/**
+          filters:
+            - JwtAuthentication
           cors:
             allowedOriginPatterns:
               - "http://localhost:8000"
@@ -38,6 +50,16 @@ eureka:
   client:
     service-url:
       defaultZone: http://eureka-server:8761/eureka/
+
+jwt:
+  secret: a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6A7B8C9D0E1F2G3H4
+  access:
+    expiration:
+      minutes: 15
+  refresh:
+    expiration:
+      days: 7
+
 
 server:
   port: 8000
