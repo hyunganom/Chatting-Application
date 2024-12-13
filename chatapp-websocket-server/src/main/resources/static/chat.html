@@ -1,105 +1,226 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Chat Application</title>
+    <title>채팅 애플리케이션</title>
+    <!-- SockJS 및 STOMP.js 추가 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.5.1/sockjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <!-- 카카오 SDK 추가 -->
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        #auth-section, #chat-section {
+            margin: 20px;
+        }
+        input {
+            margin-bottom: 10px;
+        }
+        button {
+            margin-right: 10px;
+        }
+        #chat-messages div {
+            margin: 5px 0;
+        }
+        #userList {
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
-<h2>Chat Application</h2>
+<h2>채팅 애플리케이션</h2>
 
 <!-- 사용자 인증 영역 -->
 <div id="auth-section">
-    <h3>User Authentication</h3>
-    <label>Username: </label>
-    <input type="text" id="username" placeholder="Enter username"/><br>
-    <label>Password: </label>
-    <input type="password" id="password" placeholder="Enter password"/><br>
-    <button onclick="register()">Register</button>
-    <button onclick="login()">Login</button><br>
+    <h3>사용자 인증</h3>
+    <label>사용자명: </label>
+    <input type="text" id="username" placeholder="사용자명을 입력하세요"/><br>
+    <label>비밀번호: </label>
+    <input type="password" id="password" placeholder="비밀번호를 입력하세요"/><br>
+    <button onclick="register()">회원가입</button>
+    <button onclick="login()">로그인</button><br>
+
+    <!-- 카카오 로그인 섹션 추가 -->
+    <h3>또는</h3>
+    <div id="kakao-login-section">
+        <button onclick="kakaoLogin()">카카오로 로그인</button>
+    </div>
 </div>
 
 <!-- 채팅 및 채팅방 영역 -->
 <div id="chat-section" style="display:none;">
-    <h3>Chat Room</h3>
+    <h3>채팅방</h3>
 
     <!-- 채팅방 생성 -->
     <div id="room-creation-section">
-        <label>Room Name: </label>
-        <input type="text" id="room-name" placeholder="Enter room name"/><br>
-        <button onclick="createRoom()">Create Room</button><br>
+        <label>방 이름: </label>
+        <input type="text" id="room-name" placeholder="방 이름을 입력하세요"/><br>
+        <button onclick="createRoom()">방 생성</button><br>
     </div>
 
     <!-- 채팅방 입장 -->
     <div id="room-entry-section">
-        <label>Room ID: </label>
-        <input type="text" id="room-id" placeholder="Enter room ID"/><br>
-        <button onclick="enterRoom()">Enter Room</button><br>
+        <label>방 ID: </label>
+        <input type="text" id="room-id" placeholder="방 ID를 입력하세요"/><br>
+        <button onclick="enterRoom()">방 입장</button><br>
     </div>
 
     <!-- 채팅 메시지 표시 및 전송 -->
-    <div id="chat-messages" style="height: 300px; overflow-y: scroll; border: 1px solid black;"></div>
-    <input type="text" id="message-input" placeholder="Type a message..."/>
-    <button onclick="sendMessage()">Send</button>
+    <div id="chat-messages" style="height: 300px; overflow-y: scroll; border: 1px solid black; padding: 10px;"></div>
+    <input type="text" id="message-input" placeholder="메시지를 입력하세요..." style="width: 80%;"/>
+    <button onclick="sendMessage()">전송</button>
+
+    <!-- 유저 목록 표시 -->
+    <div id="userList"></div>
 </div>
 
 <script>
     var stompClient = null;
     var roomId = '';  // 현재 채팅방 ID
-    var sessionId = '';  // 로그인 후 세션 ID 저장
-    var username = '';  // 로그인한 사용자 이름
+    var token = '';    // 로그인 후 JWT 토큰 저장
+    var username = ''; // 로그인한 사용자 이름
+    var isKakaoHandled = false; // 카카오 인증 코드 처리 여부
+
+    // 카카오 JavaScript 키와 리다이렉트 URI 설정
+    const KAKAO_JS_KEY = '3b9a95746698992180eedc27d9eef265';  // 실제 발급받은 JavaScript 키로 변경
+    const REDIRECT_URI = 'http://localhost:8084/chat.html';    // 프론트엔드 리다이렉트 URI
+
+    // 카카오 SDK 초기화 및 리다이렉트 처리
+    window.onload = function() {
+        // 카카오 SDK 초기화
+        Kakao.init(KAKAO_JS_KEY);
+        console.log('Kakao SDK initialized');
+        handleKakaoRedirect();
+    };
+
+    /**
+     * 인가 코드가 URL에 포함되어 있는지 확인하고 처리합니다.
+     */
+    function handleKakaoRedirect() {
+        if (isKakaoHandled) return; // 이미 처리된 경우 중단
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get('code');
+        if (code) {
+            isKakaoHandled = true; // 처리 플래그 설정
+            console.log('Authorization code found:', code);
+            // 인가 코드를 백엔드로 전송하여 JWT 토큰 획득
+            fetch('http://localhost:8000/users/kakao-login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code: code })
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Kakao login failed');
+                    }
+                    return response.text();
+                })
+                .then(receivedToken => {
+                    token = receivedToken;  // JWT 토큰 저장
+                    console.log('Received JWT Token from Kakao login:', token);
+                    alert('카카오 로그인이 성공했습니다!');
+                    document.getElementById('auth-section').style.display = 'none';
+                    document.getElementById('chat-section').style.display = 'block';
+
+                    // URL에서 인가 코드 제거 (일회용 처리)
+                    window.history.replaceState({}, document.title, REDIRECT_URI);
+                })
+                .catch(error => {
+                    console.error('Error during Kakao login:', error);
+                    alert('카카오 로그인이 실패했습니다!');
+                });
+        }
+    }
 
     // 회원가입
     function register() {
-        username = document.getElementById("username").value;
-        var password = document.getElementById("password").value;
+        username = document.getElementById("username").value.trim();
+        var password = document.getElementById("password").value.trim();
 
-        fetch(`http://localhost:8000/users/register?username=${username}&password=${password}`, {
+        if (!username || !password) {
+            alert("사용자명과 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
+        fetch(`http://localhost:8000/users/register?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
             method: 'POST'
         })
-            .then(response => response.text())
-            .then(data => {
-                alert("User registered successfully: " + data);
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Registration failed');
+                }
+                return response.text();
             })
-            .catch(error => console.error('Error registering user:', error));
+            .then(data => {
+                alert("회원가입이 성공적으로 완료되었습니다: " + data);
+            })
+            .catch(error => {
+                console.error('Error registering user:', error);
+                alert('회원가입에 실패했습니다. 다시 시도해주세요.');
+            });
     }
 
     // 로그인
     function login() {
-        username = document.getElementById("username").value;
-        var password = document.getElementById("password").value;
+        username = document.getElementById("username").value.trim();
+        var password = document.getElementById("password").value.trim();
 
-        fetch(`http://localhost:8000/users/login?username=${username}&password=${password}`, {
+        if (!username || !password) {
+            alert("사용자명과 비밀번호를 모두 입력해주세요.");
+            return;
+        }
+
+        fetch(`http://localhost:8000/users/login?username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`, {
             method: 'POST'
         })
-            .then(response => response.text())
-            .then(data => {
-                sessionId = data;
-                console.log('Session ID:', sessionId); // 세션 ID 확인
-                if (sessionId !== "Invalid username or password") {
-                    alert("Login successful!");
-                    document.getElementById('chat-section').style.display = 'block';
-                } else {
-                    alert("Login failed!");
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Login failed');
                 }
+                return response.text();
             })
-            .catch(error => console.error('Error logging in:', error));
+            .then(data => {
+                token = data;  // JWT 토큰 저장
+                console.log('JWT Token:', token); // 토큰 확인
+                alert("로그인이 성공적으로 완료되었습니다!");
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('chat-section').style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error logging in:', error);
+                alert("로그인에 실패했습니다. 사용자명과 비밀번호를 확인해주세요.");
+            });
+    }
+
+    // 카카오 로그인 함수
+    function kakaoLogin() {
+        Kakao.Auth.authorize({
+            redirectUri: REDIRECT_URI
+        });
     }
 
     // 방 생성
     function createRoom() {
-        var roomName = document.getElementById("room-name").value;
+        var roomName = document.getElementById("room-name").value.trim();
 
-        if (!sessionId) {
-            alert("Please login first!");
+        if (!roomName) {
+            alert("방 이름을 입력해주세요.");
             return;
         }
 
-        fetch(`http://localhost:8000/chatrooms/create?roomName=${roomName}`, {
+        if (!token) {
+            alert("먼저 로그인해주세요!");
+            return;
+        }
+
+        fetch(`http://localhost:8000/chatrooms/create?roomName=${encodeURIComponent(roomName)}`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${sessionId}`
+                'Authorization': `Bearer ${token}`
             }
         })
             .then(response => {
@@ -109,27 +230,34 @@
                 return response.json();
             })
             .then(data => {
-                alert("Room created successfully: " + data.id);
+                alert("방이 성공적으로 생성되었습니다: " + data.id);
                 roomId = data.id;  // 방 ID 저장
             })
-            .catch(error => console.error('Error creating room:', error));
+            .catch(error => {
+                console.error('Error creating room:', error);
+                alert('방 생성에 실패했습니다. 다시 시도해주세요.');
+            });
     }
 
     // 방 입장
     function enterRoom() {
-        roomId = document.getElementById("room-id").value;
+        roomId = document.getElementById("room-id").value.trim();
+        if (!roomId) {
+            alert("방 ID를 입력해주세요.");
+            return;
+        }
         console.log('Entering room:', roomId); // 방 ID 확인
         connect();  // WebSocket 연결
     }
 
     // WebSocket 연결 및 이전 메시지 로드
     function connect() {
-        if (!sessionId) {
-            alert("Please login first!");
+        if (!token) {
+            alert("먼저 로그인해주세요!");
             return;
         }
 
-        var socket = new SockJS(`http://localhost:8000/ws?sessionId=${sessionId}&roomId=${roomId}`);  // WebSocket 연결 시 sessionId와 roomId를 URL에 포함
+        var socket = new SockJS(`http://localhost:8000/ws?token=${encodeURIComponent(token)}&roomId=${encodeURIComponent(roomId)}`);  // JWT 토큰을 쿼리 파라미터로 전송
         stompClient = Stomp.over(socket);
         stompClient.connect({}, function (frame) {
             console.log('Connected: ' + frame);
@@ -150,15 +278,16 @@
             loadPreviousMessages();  // 이전 메시지 로드
         }, function (error) {
             console.error('WebSocket connection error:', error); // 연결 에러 확인
+            alert('WebSocket 연결에 실패했습니다. 다시 시도해주세요.');
         });
     }
 
     // 서버에서 이전 메시지 로드
     function loadPreviousMessages() {
         console.log('Loading previous messages for room:', roomId);
-        fetch(`http://localhost:8000/messages/room/${roomId}?page=0&size=15`, {
+        fetch(`http://localhost:8000/messages/room/${encodeURIComponent(roomId)}?page=0&size=15`, {
             headers: {
-                'Authorization': `Bearer ${sessionId}`
+                'Authorization': `Bearer ${token}`
             }
         })
             .then(response => {
@@ -179,15 +308,19 @@
                     console.log('No previous messages found.');
                 }
             })
-            .catch(error => console.error('Error loading previous messages:', error));
+            .catch(error => {
+                console.error('Error loading previous messages:', error);
+                alert('이전 메시지를 불러오는데 실패했습니다.');
+            });
     }
 
     // 메시지 전송
     function sendMessage() {
-        var messageInput = document.getElementById('message-input').value;
-        if (messageInput.trim() !== "") {
+        var messageInput = document.getElementById('message-input').value.trim();
+        if (messageInput !== "") {
             var message = {
-                'content': messageInput
+                'content': messageInput,
+                'sender': username
             };
 
             // WebSocket을 통해 메시지 전송
@@ -203,7 +336,7 @@
         var chatMessages = document.getElementById('chat-messages');
         if (chatMessages) {
             var messageElement = document.createElement('div');
-            messageElement.appendChild(document.createTextNode(message.userId + ": " + message.content));
+            messageElement.appendChild(document.createTextNode(message.sender + ": " + message.content));
             chatMessages.appendChild(messageElement);
             chatMessages.scrollTop = chatMessages.scrollHeight;  // 새로운 메시지가 도착하면 자동으로 스크롤
             console.log('New message displayed:', message);  // 화면에 출력된 메시지 로그
@@ -220,7 +353,7 @@
             userListDiv.id = 'userList';
             document.getElementById('chat-section').appendChild(userListDiv);
         }
-        userListDiv.innerHTML = '<h3>Users in room:</h3><ul>' + users.map(function(user) {
+        userListDiv.innerHTML = '<h3>방에 참여한 유저 목록:</h3><ul>' + users.map(function(user) {
             return '<li>' + user.username + '</li>';
         }).join('') + '</ul>';
     }

@@ -1,6 +1,8 @@
 package chat.websocketserver.config;
 
-import chat.websocketserver.service.SessionService;
+import chat.websocketserver.util.JwtTokenProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -14,17 +16,13 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 @Component
 public class AuthenticationHandshakeInterceptor implements HandshakeInterceptor {
 
-    // Logger 인스턴스 생성
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationHandshakeInterceptor.class);
 
     @Autowired
-    private SessionService sessionService;
+    private JwtTokenProvider jwtTokenProvider;
 
     @Override
     public boolean beforeHandshake(
@@ -35,7 +33,7 @@ public class AuthenticationHandshakeInterceptor implements HandshakeInterceptor 
 
         // 요청 URI에서 쿼리 문자열을 가져옴.
         String query = request.getURI().getQuery();
-        logger.info("Handshake query: " + query);
+        logger.info("Handshake query: {}", query);
 
         if (query != null) {
             // 쿼리 문자열을 파싱하여 매개변수 맵을 생성.
@@ -43,37 +41,40 @@ public class AuthenticationHandshakeInterceptor implements HandshakeInterceptor 
                     .map(param -> param.split("=", 2))
                     .filter(keyVal -> keyVal.length == 2)
                     .collect(Collectors.toMap(
-                            keyVal -> decodeURL(keyVal[0]), // 키를 디코딩.
-                            keyVal -> decodeURL(keyVal[1]))); // 값을 디코딩.
+                            keyVal -> decodeURL(keyVal[0]),
+                            keyVal -> decodeURL(keyVal[1])));
 
-            // sessionId와 roomId를 추출
-            String sessionId = params.get("sessionId");
+            // token과 roomId를 추출
+            String token = params.get("token");
             String roomIdStr = params.get("roomId");
-            logger.info("Extracted sessionId: {}", sessionId);
+            logger.info("Extracted token: {}", token);
             logger.info("Extracted roomIdStr: {}", roomIdStr);
 
-            if (sessionId != null && roomIdStr != null) {
+            if (token != null && roomIdStr != null) {
                 try {
-                    // roomId를 Long 타입으로 변환
-                    Long roomId = Long.parseLong(roomIdStr);
-                    // sessionId를 사용하여 userId를 가져
-                    Long userId = sessionService.getUserIdBySession(sessionId);
-                    logger.info("Retrieved userId: {}", userId);
+                    // 토큰 검증
+                    if (jwtTokenProvider.validateToken(token)) {
+                        String username = jwtTokenProvider.getUsername(token);
+                        Long userId = jwtTokenProvider.getUserId(token);
 
-                    if (userId != null) {
+                        // roomId를 Long 타입으로 변환
+                        Long roomId = Long.parseLong(roomIdStr);
+
+                        logger.info("Token is valid. Username: {}, UserId: {}", username, userId);
+
                         // 속성 맵에 userId와 roomId를 저장
                         attributes.put("userId", userId);
                         attributes.put("roomId", roomId);
                         logger.info("Attributes set: userId={}, roomId={}", userId, roomId);
                         return true;
                     } else {
-                        logger.warn("Invalid sessionId: {}", sessionId);
+                        logger.warn("Invalid token: {}", token);
                     }
-                } catch (NumberFormatException e) {
-                    logger.error("Invalid roomId format: {}", roomIdStr);
+                } catch (Exception e) {
+                    logger.error("Error during token validation or parsing roomId: {}", e.getMessage(), e);
                 }
             } else {
-                logger.warn("Missing sessionId or roomId in query parameters.");
+                logger.warn("Missing token or roomId in query parameters.");
             }
         } else {
             logger.warn("No query parameters found in the handshake request.");
@@ -98,3 +99,4 @@ public class AuthenticationHandshakeInterceptor implements HandshakeInterceptor 
         }
     }
 }
+

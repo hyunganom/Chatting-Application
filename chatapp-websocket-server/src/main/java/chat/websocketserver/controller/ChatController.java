@@ -36,13 +36,16 @@ public class ChatController {
      * @param sessionAttributes 웹소켓 세션의 속성 맵
      */
     @MessageMapping("/chat.sendMessage")
-    public void sendMessage(@Payload Message message, @Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
+    public void sendMessage(@Payload Message message,
+                            @Header("simpSessionAttributes") Map<String, Object> sessionAttributes) {
         try {
+            log.debug("sessionAttributes =>" + sessionAttributes);
+
             Long userId = (Long) sessionAttributes.get("userId");
             Long roomId = (Long) sessionAttributes.get("roomId");
 
-            if (userId == null || roomId == null) {
-                log.warn("User ID or Room ID is null. Message not processed.");
+            if (userId == null || roomId == null ) {
+                log.warn("User ID, Room ID 또는 Username이 null입니다. 메시지가 처리되지 않습니다.");
                 return;
             }
 
