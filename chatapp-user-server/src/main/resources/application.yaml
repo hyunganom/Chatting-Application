@@ -39,7 +39,7 @@ jwt:
 
 kakao:
   client-id: 5f44fec002725b27a7f8e94473f17204
-  redirect-uri: http://localhost:8084/chat.html  # Replace with your actual redirect URI
+  redirect-uri: http://localhost:3001  # Replace with your actual redirect URI
   auth-url: https://kauth.kakao.com/oauth/authorize
   token-url: https://kauth.kakao.com/oauth/token
   user-info-url: https://kapi.kakao.com/v2/user/me
