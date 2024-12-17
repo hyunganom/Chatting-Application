@@ -11,6 +11,7 @@ public class Message implements Serializable {
     private Long roomId;
     private Long userId;
     private String content;
+    private String sender;
     private LocalDateTime timestamp;
 
     public Message() {}
