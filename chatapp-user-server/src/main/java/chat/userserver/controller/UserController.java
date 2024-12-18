@@ -18,7 +18,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/users")
-@CrossOrigin(origins = "http://localhost:3001") // 필요 시 외부 설정 파일로 이동 가능
+@CrossOrigin(origins = "*")
 public class UserController {
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
