@@ -65,46 +65,30 @@ public class MessageService {
         }
     }
 
-    /**
-     * 메시지를 전송함.
-     *
-     * @param message 전송할 메시지 객체
-     */
-    @Transactional
-    public void sendMessage(Message message) {
-        // 필수 필드 설정 및 검증
-        if (message.getId() == null) {
-            // ID가 Long 타입이라면 UUID 대신 적절한 방식으로 설정해야 함
-            // 예: message.setId(generateUniqueId());
-        }
-        if (message.getTimestamp() == null) {
-            message.setTimestamp(LocalDateTime.now());
-        }
 
-        Long roomId = message.getRoomId();
-        if (roomId == null) {
-            logger.error("Room ID cannot be null for message with ID: {}", message.getId());
-            throw new IllegalArgumentException("Room ID cannot be null");
-        }
-
-        // 이벤트 발행
-        MessageEvent event = new MessageEvent("SEND", message);
-
-        // Kafka로 메시지 전송
-        kafkaTemplate.send(MESSAGE_TOPIC, null, event)
-                .addCallback(new ListenableFutureCallback<SendResult<String, MessageEvent>>() {
-                    @Override
-                    public void onSuccess(SendResult<String, MessageEvent> result) {
-                        logger.info("Message with ID: {} sent successfully to Kafka topic: {}", message.getId(), MESSAGE_TOPIC);
-                    }
-
-                    @Override
-                    public void onFailure(Throwable ex) {
-                        logger.error("Failed to send message with ID: {} to Kafka topic: {}. Error: {}", message.getId(), MESSAGE_TOPIC, ex.getMessage());
-                        // 필요 시 재시도 로직 추가 가능
-                    }
-                });
-    }
+//    @Transactional
+//    public void sendMessage(Message message) {
+//        Long roomId = message.getRoomId();
+//        if (roomId == null) {
+//            logger.error("Room ID cannot be null for message with ID: {}", message.getId());
+//            throw new IllegalArgumentException("Room ID cannot be null");
+//        }
+//
+//        MessageEvent event = new MessageEvent("SEND", message);
+//
+//        kafkaTemplate.send(MESSAGE_TOPIC, null, event)
+//                .addCallback(new ListenableFutureCallback<SendResult<String, MessageEvent>>() {
+//                    @Override
+//                    public void onSuccess(SendResult<String, MessageEvent> result) {
+//                        logger.info("Message with ID: {} sent successfully to Kafka topic: {}", message.getId(), MESSAGE_TOPIC);
+//                    }
+//
+//                    @Override
+//                    public void onFailure(Throwable ex) {
+//                        logger.error("Failed to send message with ID: {} to Kafka topic: {}. Error: {}", message.getId(), MESSAGE_TOPIC, ex.getMessage());
+//                    }
+//                });
+//    }
 
     /**
      * 메시지를 삭제함.
