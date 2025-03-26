@@ -76,7 +76,7 @@ pipeline {
                     def websocketImage = docker.build("rheonik/chat-websocket-service:1.0", "chatapp-websocket-server/")
                     def messageImage = docker.build("rheonik/chat-message-service:1.0", "chatapp-message-server/")
 
-                    // 이미지 존재 여부 확인
+
                     sh 'docker images'
 
 
@@ -97,7 +97,7 @@ pipeline {
                 script {
                     sh '''
                         cd ${WORKSPACE}
-                        docker-compose down  # 기존 컨테이너를 중지하고 제거
+                        docker-compose down
                         docker-compose pull
                         docker-compose -p chatting_application up -d
                     '''
