@@ -1,25 +1,35 @@
 spring:
   application:
     name: websocket-service
+
   redis:
     host: redis
     port: 6379
+
   cache:
     redis:
       cache-prefix: "websocket::"
 
-  # Kafka
+  # ─── Kafka 설정 ─── #
   kafka:
     bootstrap-servers: kafka_broker1:9092,kafka_broker2:9093,kafka_broker3:9094
+
     consumer:
       group-id: websocket_group
-      auto-offset-reset: earliest
+      auto-offset-reset: latest               # 기존 earliest → latest 로 변경
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
+        # POJO 역직렬화 시 허용할 패키지
         spring.json.trusted.packages: "chat.websocketserver.event, chat.messageserver.event, java.util, java.lang"
+        # __TypeId__ 헤더 무시
+        spring.json.use.type.headers: false
+        # 헤더 대신 이 타입으로만 바인딩
+        spring.json.value.default.type: "chat.websocketserver.event.ChatRoomEvent"
+
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-
 
 server:
   port: 8084
