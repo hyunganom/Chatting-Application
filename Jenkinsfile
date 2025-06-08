@@ -95,7 +95,6 @@ pipeline {
                 script {
                     sh '''
                       cd ${WORKSPACE}
-                      # core 서비스 스택 재기동
                       docker-compose -f docker-compose.base.yml -p chatting_application_core down
                       docker-compose -f docker-compose.base.yml -p chatting_application_core pull
                       docker-compose -f docker-compose.base.yml -p chatting_application_core up -d
