@@ -1,4 +1,3 @@
-// src/main/java/chat/websocketserver/config/KafkaProducerConfig.java
 package chat.websocketserver.config;
 
 import chat.websocketserver.event.ChatRoomEvent;
@@ -23,17 +22,20 @@ public class KafkaProducerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
+    // 공통 ProducerFactory
     private <T> ProducerFactory<String, T> buildFactory() {
         Map<String, Object> props = new HashMap<>();
         props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
-        // JSON 직렬화 시 __TypeId__ 헤더를 **포함하지 않도록** 설정
-        JsonSerializer<T> serializer = new JsonSerializer<>();
-        serializer.setAddTypeInfo(false);
+        JsonSerializer<T> valueSerializer = new JsonSerializer<>();
+        valueSerializer.setAddTypeInfo(false);         // __TypeId__ 헤더 미포함
 
-        return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), serializer);
+        return new DefaultKafkaProducerFactory<>(
+                props,
+                new StringSerializer(),
+                valueSerializer
+        );
     }
 
     @Bean(name = "messageEventKafkaTemplate")
