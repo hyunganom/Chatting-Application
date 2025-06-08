@@ -96,14 +96,14 @@ pipeline {
                     sh '''
                       cd ${WORKSPACE}
 
-                      # 기존 컨테이너 내림
-                      docker compose -f docker-compose.base.yml down
+                      # 기존 컨테이너 중지 및 제거
+                      docker-compose -f docker-compose.base.yml down
 
-                      # 이미지 최신화
-                      docker compose -f docker-compose.base.yml pull
+                      # 최신 이미지 가져오기
+                      docker-compose -f docker-compose.base.yml pull
 
-                      # 전체 스택 기동
-                      docker compose -f docker-compose.base.yml \
+                      # 스택 재기동
+                      docker-compose -f docker-compose.base.yml \
                         -p chatting_application up -d
                     '''
                 }
