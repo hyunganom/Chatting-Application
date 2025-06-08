@@ -1,3 +1,4 @@
+// src/main/java/chat/websocketserver/config/KafkaProducerConfig.java
 package chat.websocketserver.config;
 
 import chat.websocketserver.event.ChatRoomEvent;
@@ -28,25 +29,23 @@ public class KafkaProducerConfig {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
-        JsonSerializer<T> jsonSerializer = new JsonSerializer<>();
-        jsonSerializer.setAddTypeInfo(true);          // __TypeId__ 헤더 추가
+        // JSON 직렬화 시 __TypeId__ 헤더를 **포함하지 않도록** 설정
+        JsonSerializer<T> serializer = new JsonSerializer<>();
+        serializer.setAddTypeInfo(false);
 
-        return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), jsonSerializer);
+        return new DefaultKafkaProducerFactory<>(props, new StringSerializer(), serializer);
     }
 
-    // ────────────── MessageEvent ────────────── //
     @Bean(name = "messageEventKafkaTemplate")
     public KafkaTemplate<String, MessageEvent> messageEventKafkaTemplate() {
         return new KafkaTemplate<>(buildFactory());
     }
 
-    // ────────────── UserPresenceEvent ────────────── //
     @Bean(name = "userPresenceEventKafkaTemplate")
     public KafkaTemplate<String, UserPresenceEvent> userPresenceEventKafkaTemplate() {
         return new KafkaTemplate<>(buildFactory());
     }
 
-    // ────────────── ChatRoomEvent ────────────── //
     @Bean(name = "chatRoomEventKafkaTemplate")
     public KafkaTemplate<String, ChatRoomEvent> chatRoomEventKafkaTemplate() {
         return new KafkaTemplate<>(buildFactory());

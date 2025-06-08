@@ -1,3 +1,4 @@
+// src/main/java/chat/websocketserver/config/KafkaConsumerConfig.java
 package chat.websocketserver.config;
 
 import chat.websocketserver.event.ChatRoomEvent;
@@ -25,58 +26,63 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    // ────────────── 공통 유틸 ────────────── //
     private <T> ConsumerFactory<String, T> buildFactory(Class<T> clazz, String groupId) {
-        JsonDeserializer<T> jsonDeserializer = new JsonDeserializer<>(clazz);
-        jsonDeserializer.addTrustedPackages("*");      // 패키지 신뢰
-        jsonDeserializer.setUseTypeMapperForKey(false);
+        JsonDeserializer<T> deserializer = new JsonDeserializer<>(clazz);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeMapperForKey(false);
 
         Map<String, Object> props = new HashMap<>();
-        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,       bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG,                groupId);
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,   StringDeserializer.class);
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class);
 
-        return new DefaultKafkaConsumerFactory<>(props, new StringDeserializer(), jsonDeserializer);
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer
+        );
     }
 
-    private <T> ConcurrentKafkaListenerContainerFactory<String, T> buildContainerFactory(ConsumerFactory<String, T> cf) {
-        ConcurrentKafkaListenerContainerFactory<String, T> factory = new ConcurrentKafkaListenerContainerFactory<>();
+    private <T> ConcurrentKafkaListenerContainerFactory<String, T> buildContainerFactory(
+            ConsumerFactory<String, T> cf) {
+        ConcurrentKafkaListenerContainerFactory<String, T> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(cf);
         return factory;
     }
 
-    // ────────────── MessageEvent ────────────── //
     @Bean
     public ConsumerFactory<String, MessageEvent> messageEventConsumerFactory() {
         return buildFactory(MessageEvent.class, "message_event_group");
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, MessageEvent> messageEventKafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, MessageEvent>
+    messageEventKafkaListenerContainerFactory() {
         return buildContainerFactory(messageEventConsumerFactory());
     }
 
-    // ────────────── UserPresenceEvent ────────────── //
     @Bean
     public ConsumerFactory<String, UserPresenceEvent> userPresenceEventConsumerFactory() {
         return buildFactory(UserPresenceEvent.class, "user_presence_group");
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent> userPresenceKafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent>
+    userPresenceKafkaListenerContainerFactory() {
         return buildContainerFactory(userPresenceEventConsumerFactory());
     }
 
-    // ────────────── ChatRoomEvent ────────────── //
     @Bean
     public ConsumerFactory<String, ChatRoomEvent> chatRoomEventConsumerFactory() {
         return buildFactory(ChatRoomEvent.class, "chatroom_event_group");
     }
 
     @Bean
-    public ConcurrentKafkaListenerContainerFactory<String, ChatRoomEvent> chatRoomEventKafkaListenerContainerFactory() {
+    public ConcurrentKafkaListenerContainerFactory<String, ChatRoomEvent>
+    chatRoomEventKafkaListenerContainerFactory() {
         return buildContainerFactory(chatRoomEventConsumerFactory());
     }
 }
