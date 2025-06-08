@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     tools {
         jdk 'JDK11'
         maven 'MAVEN_HOME'
@@ -49,7 +50,7 @@ pipeline {
             }
         }
 
-        stage('Build Websoket Server') {
+        stage('Build Websocket Server') {
             steps {
                 dir('chatapp-websocket-server') {
                     sh 'mvn clean package -DskipTests'
@@ -65,20 +66,17 @@ pipeline {
             }
         }
 
-
         stage('Build Docker Images') {
             steps {
                 script {
-                    def eurekaImage = docker.build("rheonik/chat-eureka-server:1.0", "chatapp-eureka-server/")
-                    def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server/")
-                    def userImage = docker.build("rheonik/chat-user-service:1.0", "chatapp-user-server/")
-                    def chatImage = docker.build("rheonik/chat-chat-service:1.0", "chatapp-chat-server/")
-                    def websocketImage = docker.build("rheonik/chat-websocket-service:1.0", "chatapp-websocket-server/")
-                    def messageImage = docker.build("rheonik/chat-message-service:1.0", "chatapp-message-server/")
-
+                    def eurekaImage     = docker.build("rheonik/chat-eureka-server:1.0",     "chatapp-eureka-server")
+                    def apiGatewayImage = docker.build("rheonik/chat-apigateway-server:1.0", "chatapp-apigateway-server")
+                    def userImage       = docker.build("rheonik/chat-user-service:1.0",     "chatapp-user-server")
+                    def chatImage       = docker.build("rheonik/chat-chat-service:1.0",     "chatapp-chat-server")
+                    def websocketImage  = docker.build("rheonik/chat-websocket-service:1.0","chatapp-websocket-server")
+                    def messageImage    = docker.build("rheonik/chat-message-service:1.0",  "chatapp-message-server")
 
                     sh 'docker images'
-
 
                     docker.withRegistry('https://index.docker.io/v1/', 'dockerhub-credentials-id') {
                         eurekaImage.push()
@@ -96,10 +94,17 @@ pipeline {
             steps {
                 script {
                     sh '''
-                        cd ${WORKSPACE}
-                        docker-compose down
-                        docker-compose pull
-                        docker-compose -p chatting_application up -d
+                      cd ${WORKSPACE}
+
+                      # 기존 컨테이너 내림
+                      docker compose -f docker-compose.base.yml down
+
+                      # 이미지 최신화
+                      docker compose -f docker-compose.base.yml pull
+
+                      # 전체 스택 기동
+                      docker compose -f docker-compose.base.yml \
+                        -p chatting_application up -d
                     '''
                 }
             }

@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  kafka_exporter:
+    image: danielqsj/kafka-exporter
+    command: --kafka.server=kafka_broker1:29092 --kafka.server=kafka_broker2:29093 --kafka.server=kafka_broker3:29094
+    ports:
+      - "9308:9308"
+    depends_on:
+      - kafka_broker1
+      - kafka_broker2
+      - kafka_broker3
+    networks:
+      - app-network
+
+  postgres_exporter:
+    image: wrouesnel/postgres_exporter
+    environment:
+      DATA_SOURCE_NAME: "postgresql://chatuser:chatpass@postgres:5432/chatapp_db?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  redis_exporter:
+    image: oliver006/redis_exporter
+    environment:
+      REDIS_ADDR: "redis://redis:6379"
+    ports:
+      - "9121:9121"
+    depends_on:
+      - redis
+    networks:
+      - app-network
+
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - /Users/hyunjae/desktop/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - app-network
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node
+    restart: always
+    ports:
+      - "9100:9100"
+    networks:
+      - app-network
+
+  elasticsearch:
+    image: elasticsearch:7.17.9
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - app-network
+
+  logstash:
+    image: logstash:7.17.9
+    volumes:
+      - /Users/hyunjae/desktop/logstash/pipeline/logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - /Users/hyunjae/desktop/logs:/var/log
+    ports:
+      - "5044:5044"
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+
+  kibana:
+    image: kibana:7.17.9
+    container_name: kibana
+    volumes:
+      - /Users/hyunjae/desktop/kibana/config/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.17.9
+    user: root
+    volumes:
+      - /Users/hyunjae/desktop/filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro
+      - /Users/hyunjae/desktop/logs:/var/log:ro
+    depends_on:
+      - logstash
+    networks:
+      - app-network
+
+networks:
+  app-network:
+
+volumes:
+  grafana_data:
+  es_data:
