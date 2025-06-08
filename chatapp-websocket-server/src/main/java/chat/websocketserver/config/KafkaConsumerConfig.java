@@ -1,8 +1,8 @@
 package chat.websocketserver.config;
 
-import chat.websocketserver.event.ChatRoomEvent;
 import chat.websocketserver.event.MessageEvent;
 import chat.websocketserver.event.UserPresenceEvent;
+import chat.websocketserver.model.Message;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,64 +25,52 @@ public class KafkaConsumerConfig {
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
 
-    // ───────────────────────── 헬퍼 ───────────────────────── //
-    private <T> ConsumerFactory<String, T> buildFactory(Class<T> clazz, String groupId) {
-
-        JsonDeserializer<T> valueDeserializer = new JsonDeserializer<>(clazz);
-        valueDeserializer.addTrustedPackages("*");
-        valueDeserializer.setUseTypeHeaders(false);      // __TypeId__ 헤더 무시 (value)
-        valueDeserializer.setUseTypeMapperForKey(false); // key 쪽도 헤더 무시
+    // MessageEvent ConsumerFactory 및 ListenerContainerFactory
+    @Bean
+    public ConsumerFactory<String, MessageEvent> messageEventConsumerFactory() {
+        JsonDeserializer<MessageEvent> deserializer = new JsonDeserializer<>(MessageEvent.class);
+        deserializer.addTrustedPackages("*");
 
         Map<String, Object> props = new HashMap<>();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
-        props.put(ConsumerConfig.GROUP_ID_CONFIG,           groupId);
-        // Key 도 ErrorHandling 으로 감싸면 깨진 key 를 안전하게 건너뜁니다.
-        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG,   ErrorHandlingDeserializer.class);
-        props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class);
-
-        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ErrorHandlingDeserializer.class);
-        props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, valueDeserializer.getClass());
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "message_event_group");
 
         return new DefaultKafkaConsumerFactory<>(
                 props,
-                new StringDeserializer(),  // 실제 Key Deserializer
-                valueDeserializer          // 실제 Value Deserializer
-        );
+                new StringDeserializer(),
+                deserializer);
     }
 
-    private <T> ConcurrentKafkaListenerContainerFactory<String, T>
-    containerFactory(ConsumerFactory<String, T> cf) {
-        ConcurrentKafkaListenerContainerFactory<String, T> factory =
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, MessageEvent> messageEventKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, MessageEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
-        factory.setConsumerFactory(cf);
+        factory.setConsumerFactory(messageEventConsumerFactory());
         return factory;
     }
-    // ─────────────────────────────────────────────────────── //
 
-    // MessageEvent
-    @Bean public ConsumerFactory<String, MessageEvent> messageEventConsumerFactory() {
-        return buildFactory(MessageEvent.class, "message_event_group");
-    }
-    @Bean public ConcurrentKafkaListenerContainerFactory<String, MessageEvent>
-    messageEventKafkaListenerContainerFactory() {
-        return containerFactory(messageEventConsumerFactory());
-    }
+    // UserPresenceEvent ConsumerFactory 및 ListenerContainerFactory
+    @Bean
+    public ConsumerFactory<String, UserPresenceEvent> userPresenceEventConsumerFactory() {
+        JsonDeserializer<UserPresenceEvent> deserializer = new JsonDeserializer<>(UserPresenceEvent.class);
+        deserializer.addTrustedPackages("*");
+        deserializer.setUseTypeMapperForKey(false); // 헤더에 타입 정보가 없는 경우 기본 타입 사용
 
-    // UserPresenceEvent
-    @Bean public ConsumerFactory<String, UserPresenceEvent> userPresenceEventConsumerFactory() {
-        return buildFactory(UserPresenceEvent.class, "user_presence_group");
-    }
-    @Bean public ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent>
-    userPresenceKafkaListenerContainerFactory() {
-        return containerFactory(userPresenceEventConsumerFactory());
+        Map<String, Object> props = new HashMap<>();
+        props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        props.put(ConsumerConfig.GROUP_ID_CONFIG, "user_presence_group");
+
+        return new DefaultKafkaConsumerFactory<>(
+                props,
+                new StringDeserializer(),
+                deserializer);
     }
 
-    // ChatRoomEvent
-    @Bean public ConsumerFactory<String, ChatRoomEvent> chatRoomEventConsumerFactory() {
-        return buildFactory(ChatRoomEvent.class, "chatroom_event_group");
-    }
-    @Bean public ConcurrentKafkaListenerContainerFactory<String, ChatRoomEvent>
-    chatRoomEventKafkaListenerContainerFactory() {
-        return containerFactory(chatRoomEventConsumerFactory());
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent> userPresenceKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, UserPresenceEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(userPresenceEventConsumerFactory());
+        return factory;
     }
 }
