@@ -90,21 +90,15 @@ pipeline {
             }
         }
 
-        stage('Deploy with Docker Compose') {
+        stage('Deploy Core Stack') {
             steps {
                 script {
                     sh '''
                       cd ${WORKSPACE}
-
-                      # 기존 컨테이너 중지 및 제거
-                      docker-compose -f docker-compose.base.yml down
-
-                      # 최신 이미지 가져오기
-                      docker-compose -f docker-compose.base.yml pull
-
-                      # 스택 재기동
-                      docker-compose -f docker-compose.base.yml \
-                        -p chatting_application up -d
+                      # core 서비스 스택 재기동
+                      docker-compose -f docker-compose.base.yml -p chatting_application_core down
+                      docker-compose -f docker-compose.base.yml -p chatting_application_core pull
+                      docker-compose -f docker-compose.base.yml -p chatting_application_core up -d
                     '''
                 }
             }
