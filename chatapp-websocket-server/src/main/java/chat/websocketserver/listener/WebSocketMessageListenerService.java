@@ -9,35 +9,27 @@ import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
 
-/**
- * WebSocket 메시지 관련 이벤트를 처리하는 리스너 서비스.
- */
 @Service
 @Slf4j
 public class WebSocketMessageListenerService {
 
     private final SimpMessagingTemplate messagingTemplate;
 
-    private static final String MESSAGE_TOPIC = "message-events";
-    private static final String CHATROOM_TOPIC = "chatroom-events";
-    private static final String ACTION_SEND = "SEND";
-    private static final String ACTION_DELETE = "DELETE";
-    private static final String ACTION_CREATE = "CREATE";
-    private static final String ACTION_UPDATE = "UPDATE";
+    private static final String MESSAGE_TOPIC    = "message-events";
+    private static final String CHATROOM_TOPIC   = "chatroom-events";
+    private static final String ACTION_SEND      = "SEND";
+    private static final String ACTION_DELETE    = "DELETE";
+    private static final String ACTION_CREATE    = "CREATE";
+    private static final String ACTION_UPDATE    = "UPDATE";
 
     @Autowired
     public WebSocketMessageListenerService(SimpMessagingTemplate messagingTemplate) {
         this.messagingTemplate = messagingTemplate;
     }
 
-    /**
-     * Kafka에서 메시지 이벤트를 소비함.
-     *
-     * @param event 소비된 메시지 이벤트
-     */
     @KafkaListener(
-            topics = MESSAGE_TOPIC,
-            groupId = "message_event_group",
+            topics          = MESSAGE_TOPIC,
+            groupId         = "message_event_group",
             containerFactory = "messageEventKafkaListenerContainerFactory"
     )
     public void consumeMessageEvent(MessageEvent event) {
@@ -46,47 +38,38 @@ public class WebSocketMessageListenerService {
         Long roomId = message.getRoomId();
 
         if (ACTION_SEND.equals(action)) {
-            // 메시지를 해당 채팅방에 브로드캐스트함.
             messagingTemplate.convertAndSend("/topic/chatroom-" + roomId, message);
             log.info("Broadcasted message to /topic/chatroom-{}", roomId);
+
         } else if (ACTION_DELETE.equals(action)) {
-            // 메시지 삭제를 해당 채팅방에 브로드캐스트함.
             messagingTemplate.convertAndSend("/topic/chatroom-" + roomId + "-deletes", message.getId());
             log.info("Broadcasted message deletion to /topic/chatroom-{}-deletes", roomId);
         }
     }
 
-    /**
-     * Kafka에서 채팅방 이벤트를 소비함.
-     *
-     * @param event 소비된 채팅방 이벤트
-     */
     @KafkaListener(
-            topics = CHATROOM_TOPIC,
-            groupId = "websocket_group",
-            containerFactory = "kafkaListenerContainerFactory"
+            topics           = CHATROOM_TOPIC,
+            groupId          = "chatroom_event_group",
+            containerFactory = "chatRoomEventKafkaListenerContainerFactory"
     )
     public void consumeChatRoomEvent(ChatRoomEvent event) {
-        String action = event.getAction();
-        Long roomId = event.getChatRoom().getId();
+        String action   = event.getAction();
+        Long roomId     = event.getChatRoom().getId();
         String roomName = event.getChatRoom().getRoomName();
-        String destination = "/topic/chatroom-" + roomId;
+        String dest     = "/topic/chatroom-" + roomId;
 
         switch (action) {
             case ACTION_CREATE:
-                // 채팅방 생성 알림을 브로드캐스트함.
-                messagingTemplate.convertAndSend(destination, "Chat room created: " + roomName);
-                log.info("Broadcasted chat room creation to {}", destination);
+                messagingTemplate.convertAndSend(dest, "Chat room created: " + roomName);
+                log.info("Broadcasted chat room creation to {}", dest);
                 break;
             case ACTION_UPDATE:
-                // 채팅방 업데이트 알림을 브로드캐스트함.
-                messagingTemplate.convertAndSend(destination, "Chat room updated: " + roomName);
-                log.info("Broadcasted chat room update to {}", destination);
+                messagingTemplate.convertAndSend(dest, "Chat room updated: " + roomName);
+                log.info("Broadcasted chat room update to {}", dest);
                 break;
             case ACTION_DELETE:
-                // 채팅방 삭제 알림을 브로드캐스트함.
-                messagingTemplate.convertAndSend(destination, "Chat room deleted: " + roomName);
-                log.info("Broadcasted chat room deletion to {}", destination);
+                messagingTemplate.convertAndSend(dest, "Chat room deleted: " + roomName);
+                log.info("Broadcasted chat room deletion to {}", dest);
                 break;
             default:
                 log.warn("Unknown action '{}' for ChatRoomEvent", action);
